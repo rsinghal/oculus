@@ -31,3 +31,11 @@ def delete_manifest(manifest_id):
 def manifest_exists(manifest_id):
     es = get_connection()
     return es.exists(index=ELASTICSEARCH_INDEX, doc_type="manifest", id=manifest_id)
+
+def get_all_manifest_ids():
+    es = get_connection()
+    results = es.search(index="manifests", doc_type="manifest", fields="[]")
+    ids = []
+    for r in results["hits"]["hits"]:
+        ids.append(str(r["_id"]))
+    return ids
