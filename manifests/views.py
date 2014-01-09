@@ -27,11 +27,14 @@ def manifest(request, document_id):
         # Store to elasticsearch
         models.add_or_update_manifest(document_id, converted_json)
         
-        return HttpResponse(converted_json, content_type="application/json")
+        response = HttpResponse(converted_json, content_type="application/json")
     else:
         # return JSON from db
         json_doc = models.get_manifest(document_id)
-        return HttpResponse(json.dumps(json_doc), content_type="application/json")
+        response = HttpResponse(json.dumps(json_doc), content_type="application/json")
+    
+    response["Access-Control-Allow-Origin"] = "*"
+    return response
 
 def delete(request, document_id):
     # Check if manifest exists
@@ -57,7 +60,9 @@ def refresh(request, document_id):
     # Store to elasticsearch
     models.add_or_update_manifest(document_id, converted_json)
 
-    return HttpResponse(converted_json, content_type="application/json")
+    response = HttpResponse(converted_json, content_type="application/json")
+    response["Access-Control-Allow-Origin"] = "*"
+    return response
 
 # Force refresh all document in the db
 # Might need to tweak so not hitting DRS too frequently 
