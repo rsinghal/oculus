@@ -20,6 +20,15 @@ def view_mets(request, document_id):
     else:
         return response # 404 HttpResponse object
 
+# view single mets object in mirador
+def view_mods(request, document_id):
+    (success, response) = get_mods_manifest(document_id)
+    if success:
+        title = models.get_manifest_title(document_id)
+        return render(request, 'manifests/manifest.html', {'uri' : "http://localhost:8000/manifests/mods/"+document_id, "title": title})
+    else:
+        return response # 404 HttpResponse object
+
 # Returns a IIIF manifest of a METS document in the DRS
 # Checks if DB has it, otherwise creates it
 def manifest_mets(request, document_id):
@@ -34,7 +43,13 @@ def manifest_mets(request, document_id):
 # Returns a IIIF manifest of a MODS document in the DRS
 # Checks if DB has it, otherwise creates it
 def manifest_mods(request, document_id):
-    pass
+    (success, response_doc) = get_mods_manifest(document_id)
+    if success:
+        response = HttpResponse(response_doc)
+        add_headers(response)
+        return response
+    else:
+        return response_doc # 404 HttpResponse
 
 def delete(request, document_id):
     # Check if manifest exists
@@ -146,6 +161,29 @@ def get_mets_manifest(document_id):
  
         # Convert to shared canvas model if successful
         converted_json = mets.main(response, document_id)
+        # Store to elasticsearch
+        models.add_or_update_manifest(document_id, converted_json)        
+        return (success, converted_json)
+    else:
+        # return JSON from db
+        json_doc = models.get_manifest(document_id)
+        return (True, json.dumps(json_doc))
+
+def get_mods_manifest(document_id):
+    # Check if manifest exists
+    has_manifest = models.manifest_exists(document_id)
+
+    ## TODO: add last modified check
+
+    if not has_manifest:
+        # If not, get MODS from DRS
+        (success, response) = get_mods(document_id)
+        
+        if not success:
+            return (success, response) # This is actually the 404 HttpResponse, so return and end the function
+ 
+        # Convert to shared canvas model if successful
+        converted_json = mods.main(response, document_id)
         # Store to elasticsearch
         models.add_or_update_manifest(document_id, converted_json)        
         return (success, converted_json)

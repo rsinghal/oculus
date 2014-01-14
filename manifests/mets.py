@@ -158,7 +158,7 @@ def main(data, outputIdentifier):
 if __name__ == "__main__":
 	if (len(sys.argv) < 3):
 		sys.stderr.write('not enough args\n')
-		sys.stderr.write('usage: harvard-converter.py input manifest_identifier\n')
+		sys.stderr.write('usage: mets.py input manifest_identifier\n')
 		sys.exit(0)
 
 	inputfile = sys.argv[1]
