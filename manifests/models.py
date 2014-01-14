@@ -39,3 +39,7 @@ def get_all_manifest_ids():
     for r in results["hits"]["hits"]:
         ids.append(str(r["_id"]))
     return ids
+
+def get_manifest_title(manifest_id):
+    es = get_connection()
+    return es.get(index=ELASTICSEARCH_INDEX, doc_type="manifest", id=manifest_id)["_source"]["label"]

@@ -11,34 +11,25 @@ import urllib2
 METS_DRS_URL = "http://fds.lib.harvard.edu/fds/deliver/"
 MODS_DRS_URL = "http://webservices.lib.harvard.edu/rest/MODS/via/"
 
+# view single mets object in mirador
+def view_mets(request, document_id):
+    (success, response) = get_mets_manifest(document_id)
+    if success:
+        title = models.get_manifest_title(document_id)
+        return render(request, 'manifests/manifest.html', {'uri' : "http://localhost:8000/manifests/mets/"+document_id, "title": title})
+    else:
+        return response # 404 HttpResponse object
+
 # Returns a IIIF manifest of a METS document in the DRS
 # Checks if DB has it, otherwise creates it
 def manifest_mets(request, document_id):
-    # Check if manifest exists
-    has_manifest = models.manifest_exists(document_id)
-
-    ## TODO: add last modified check
-
-    if not has_manifest:
-        # If not, get METS from DRS
-        (success, mets) = get_mets(document_id)
-        
-        if not success:
-            return mets # This is actually the 404 HttpResponse, so return and end the function
- 
-        # Convert to shared canvas model if successful
-        converted_json = mets.main(mets, document_id)
-        # Store to elasticsearch
-        models.add_or_update_manifest(document_id, converted_json)
-        
-        response = HttpResponse(converted_json)
+    (success, response_doc) = get_mets_manifest(document_id)
+    if success:
+        response = HttpResponse(response_doc)
+        add_headers(response)
+        return response
     else:
-        # return JSON from db
-        json_doc = models.get_manifest(document_id)
-        response = HttpResponse(json.dumps(json_doc))
-    
-    add_headers(response)
-    return response
+        return response_doc # 404 HttpResponse
 
 # Returns a IIIF manifest of a MODS document in the DRS
 # Checks if DB has it, otherwise creates it
@@ -58,13 +49,13 @@ def delete(request, document_id):
 # Force refresh a single document
 # Pull METS, rerun conversion script, and store in db
 def refresh_mets(request, document_id):
-    (success, mets) = get_mets(document_id)
+    (success, response) = get_mets(document_id)
 
     if not success:
-        return mets # This is actually the 404 HttpResponse, so return and end the function
+        return response # This is actually the 404 HttpResponse, so return and end the function
 
     # Convert to shared canvas model if successful
-    converted_json = mets.main(mets, document_id)
+    converted_json = mets.main(response, document_id)
 
     # Store to elasticsearch
     models.add_or_update_manifest(document_id, converted_json)
@@ -85,11 +76,11 @@ def refresh_mets_all(request):
     count = 0
     ids = models.get_all_manifest_ids()
     for document_id in ids:
-        (success, mets) = get_mets(document_id)
+        (success, response) = get_mets(document_id)
         if not success:
             continue # don't need to keep processing because it doesn't exist in DRS
         count = count + 1
-        converted_json = mets.main(mets, document_id)
+        converted_json = mets.main(response, document_id)
         models.add_or_update_manifest(document_id, converted_json)
 
     return HttpResponse("Successfully refreshed %s of %s documents" % (count, len(ids)))
@@ -111,19 +102,19 @@ def get_mets(document_id):
     try:
         response = urllib2.urlopen(mets_url)
     except urllib2.HTTPError, err:
-        if err.code == 500:
-            # document does not exist in DRS
+        if err.code == 500 or err.code == 404:
+            # document does not exist in DRS, might need to add more error codes
             return (False, HttpResponse("The document ID %s does not exist" % document_id, status=404))
 
-    mets = response.read()
-    return (True, mets)
+    response_doc = response.read()
+    return (True, response_doc)
 
 def get_mods(document_id):
     mods_url = MODS_DRS_URL+document_id
     try:
         response = urllib2.urlopen(mods_url)
     except urllib2.HTTPError, err:
-        if err.code == 500:
+        if err.code == 500: ## TODO
             # document does not exist in DRS
             return (False, HttpResponse("The document ID %s does not exist" % document_id, status=404))
 
@@ -134,3 +125,26 @@ def add_headers(response):
     response["Access-Control-Allow-Origin"] = "*"
     response["Content-Type"] = "application/ld+json"
     return response
+
+def get_mets_manifest(document_id):
+    # Check if manifest exists
+    has_manifest = models.manifest_exists(document_id)
+
+    ## TODO: add last modified check
+
+    if not has_manifest:
+        # If not, get METS from DRS
+        (success, response) = get_mets(document_id)
+        
+        if not success:
+            return (success, response) # This is actually the 404 HttpResponse, so return and end the function
+ 
+        # Convert to shared canvas model if successful
+        converted_json = mets.main(response, document_id)
+        # Store to elasticsearch
+        models.add_or_update_manifest(document_id, converted_json)        
+        return (success, converted_json)
+    else:
+        # return JSON from db
+        json_doc = models.get_manifest(document_id)
+        return (True, json.dumps(json_doc))
