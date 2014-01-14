@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from manifests import mets
 from manifests import mods
 from manifests import models
@@ -95,6 +95,11 @@ def refresh_mods_all(request):
 # Same issues as other refresh functions
 def refresh_all(request):
     pass
+
+# this is a hack because the javascript uses relative paths for the PNG files, and Django creates the incorrect URL for them
+# Need to find a better and more permanent solution
+def get_image(request, filename):
+    return HttpResponseRedirect("/static/manifests/images/openseadragon/%s" % filename)
 
 ## HELPER FUNCTIONS ##
 def get_mets(document_id):
