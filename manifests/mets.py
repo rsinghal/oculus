@@ -13,34 +13,20 @@ imageHash = {}
 def process_struct_map(st, canvasInfo):
 	info = {}
 	info['label'] = st.xpath('./@LABEL')[0]
-#	sys.stderr.write(info['label'] + '\n')
-#	print st.xpath('.//mets:fptr[2]/@FILEID', namespaces=ALLNS)
-#	print etree.tostring(st)
-#	if ( st.xpath('./mets:div/mets:fptr[2]/@FILEID', namespaces=ALLNS) ):
-#		fid = st.xpath('./mets:div/mets:fptr[2]/@FILEID', namespaces=ALLNS)[0]
-	# there can be a varied number of mets:div before the fptr
-	if ( st.xpath('.//mets:fptr[2]/@FILEID', namespaces=ALLNS) ):
-		fid = st.xpath('.//mets:fptr[2]/@FILEID', namespaces=ALLNS)[0]
-	else:
-		fid = st.xpath('./mets:fptr/@FILEID', namespaces=ALLNS)[0]
-		# might need to change xpath
 
-#	sys.stderr.write(fid + '\n')
-#	print fid, info
-	info['image'] = imageHash[fid]
-	canvasInfo.append(info)
+	for fid in st.xpath('.//mets:fptr/@FILEID', namespaces=ALLNS):
+		if fid in imageHash.keys():
+			info['image'] = imageHash[fid]
+			break
+	if 'image' in info:
+		canvasInfo.append(info)
 
 def main(data, outputIdentifier):
-	imageWidth = 2400
-	imageHeight = 2400
-
 	dom = etree.XML(data)
 
-	#imageUriBase = "http://idstest.lib.harvard.edu:9001/ids/iiif/"
 	imageUriBase = "http://ids.lib.harvard.edu/ids/iiif/"
 	imageUriSuffix = "/full/full/full/native"
 	manifestUriBase = "http://ids.lib.harvard.edu/iiif/metadata/"
-	#manifestUriBase = "http://idstest.lib.harvard.edu:9001/ids/manifest/"
 	serviceBase = imageUriBase
 	profileLevel = "http://library.stanford.edu/iiif/image-api/1.1/conformance.html#level1"
 
@@ -57,7 +43,6 @@ def main(data, outputIdentifier):
 	identifier = dom.xpath('/mets:mets/mets:dmdSec/mets:mdWrap[@MDTYPE="MODS"]/mets:xmlData/mods:mods/mods:identifier/text()', namespaces=ALLNS)[0]
 	identifierType = dom.xpath('/mets:mets/mets:dmdSec/mets:mdWrap[@MDTYPE="MODS"]/mets:xmlData/mods:mods/mods:identifier/@type', namespaces=ALLNS)[0]
 
-	#manifestUriBase += "%s/%s/" % (identifierType, identifier)
 	manifestUriBase += "%s/" % (outputIdentifier)
 
 	images = dom.xpath('/mets:mets/mets:fileSec/mets:fileGrp/mets:file[@MIMETYPE="image/jp2"]', namespaces=ALLNS)
@@ -66,12 +51,10 @@ def main(data, outputIdentifier):
 	for img in images:
 		imageHash[img.xpath('./@ID', namespaces=ALLNS)[0]] = img.xpath('./mets:FLocat/@xlink:href', namespaces = ALLNS)[0]
 
-	#print imageHash
+	print imageHash
 	canvasInfo = []
 	for st in struct:
-	#	print(st.xpath('./@LABEL')[0])
 		subdivs = st.xpath('./mets:div[@LABEL]', namespaces = ALLNS)
-	#	print len(subdivs)
 
 		# need to be able to handle any number of nesting
 		if len(subdivs) > 0:
@@ -109,8 +92,6 @@ def main(data, outputIdentifier):
 			"@id": manifestUriBase + "canvas/canvas-%s.json" % cvs['image'],
 			"@type": "sc:Canvas",
 			"label": cvs['label'],
-			#"height": imageHeight,
-			#"width": imageWidth,
 			"resources": [
 				{
 					"@id":manifestUriBase+"annotation/anno-%s.json" % cvs['image'],
@@ -120,12 +101,10 @@ def main(data, outputIdentifier):
 						"@id": imageUriBase + cvs['image'] + imageUriSuffix,
 						"@type": "dcterms:Image",
 						"format":"image/jpeg",
-						#"height": imageHeight,
 						"service": { 
 						  "@id": imageUriBase + cvs['image'],
 						  "profile": profileLevel
 						},
-						#"width": imageWidth					
 					},
 					"on": manifestUriBase + "canvas/canvas-%s.json" % cvs['image']
 				}
@@ -133,6 +112,7 @@ def main(data, outputIdentifier):
 		}
 		canvases.append(cvsjson)
 
+	## TODO
 	rangeInfo = []
 	# build table of contents using Range and Structures
 	for st in struct:

@@ -13,21 +13,35 @@ MODS_DRS_URL = "http://webservices.lib.harvard.edu/rest/MODS/via/"
 
 # view single mets object in mirador
 def view_mets(request, document_id):
-    (success, response) = get_mets_manifest(document_id)
-    if success:
-        title = models.get_manifest_title(document_id)
-        return render(request, 'manifests/manifest.html', {'uri' : "http://localhost:8000/manifests/mets/"+document_id, "title": title})
+    doc_ids = document_id.split(";")
+    manifests = {}
+    for doc_id in doc_ids:
+        (success, response) = get_mets_manifest(doc_id)
+        if success:
+            title = models.get_manifest_title(doc_id)
+            uri = "http://localhost:8000/manifests/mets/"+doc_id # TODO: fix
+            manifests[uri] = title
+
+    if len(manifests) > 0:
+        return render(request, 'manifests/manifest.html', {'manifests' : manifests})
     else:
-        return response # 404 HttpResponse object
+        return HttpResponse("The requested document ID(s) %s could not be displayed" % document_id, status=404) # 404 HttpResponse object
 
 # view single mets object in mirador
 def view_mods(request, document_id):
-    (success, response) = get_mods_manifest(document_id)
-    if success:
-        title = models.get_manifest_title(document_id)
-        return render(request, 'manifests/manifest.html', {'uri' : "http://localhost:8000/manifests/mods/"+document_id, "title": title})
+    doc_ids = document_id.split(";")
+    manifests = {}
+    for doc_id in doc_ids:
+        (success, response) = get_mods_manifest(doc_id)
+        if success:
+            title = models.get_manifest_title(doc_id)
+            uri = "http://localhost:8000/manifests/mods/"+doc_id
+            manifests[uri] = title
+
+    if len(manifests) > 0:
+        return render(request, 'manifests/manifest.html', {'manifests' : manifests})
     else:
-        return response # 404 HttpResponse object
+        return HttpResponse("The requested document ID(s) %s could not be displayed" % document_id, status=404) # 404 HttpResponse object
 
 # Returns a IIIF manifest of a METS document in the DRS
 # Checks if DB has it, otherwise creates it

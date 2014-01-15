@@ -22,11 +22,13 @@
         "id": "viewer",
     "workspaceAutoSave": false,
         "data": [
+    {% for uri, title in manifests.items %}
     { "manifestUri": "{{ uri }}", "location": "Harvard University", "title": "{{ title }}", "widgets": [{
             "height":  250,
             "type": "thumbnailsView",
             "width": 600
-          }] }
+          }] },
+    {% endfor %}
         ]
       });
     });
