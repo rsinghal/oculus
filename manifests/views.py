@@ -11,7 +11,7 @@ import urllib2
 METS_DRS_URL = "http://fds.lib.harvard.edu/fds/deliver/"
 MODS_DRS_URL = "http://webservices.lib.harvard.edu/rest/MODS/via/"
 
-# view single mets object in mirador
+# view one or more mets object in mirador
 def view_mets(request, document_id):
     doc_ids = document_id.split(";")
     manifests = {}
@@ -27,7 +27,7 @@ def view_mets(request, document_id):
     else:
         return HttpResponse("The requested document ID(s) %s could not be displayed" % document_id, status=404) # 404 HttpResponse object
 
-# view single mets object in mirador
+# view one or more mods object in mirador
 def view_mods(request, document_id):
     doc_ids = document_id.split(";")
     manifests = {}
@@ -65,6 +65,7 @@ def manifest_mods(request, document_id):
     else:
         return response_doc # 404 HttpResponse
 
+# Delete any document from db
 def delete(request, document_id):
     # Check if manifest exists
     has_manifest = models.manifest_exists(document_id)
@@ -89,41 +90,22 @@ def refresh_mets(request, document_id):
     # Store to elasticsearch
     models.add_or_update_manifest(document_id, converted_json)
 
-    response = HttpResponse(converted_json)
-    add_headers(response)
-    return response
+    http_response = HttpResponse(converted_json)
+    add_headers(http_response)
+    return http_response
 
 # Refresh a single document
 # Pull MODS, rerun conversion script, store in db
 def refresh_mods(request, document_id):
-    pass
-
-# Force refresh all originally METS documents in the db
-# Might need to tweak so not hitting DRS as frequently 
-# TODO: bulk load to elasticsearch
-def refresh_mets_all(request):
-    count = 0
-    ids = models.get_all_manifest_ids()
-    for document_id in ids:
-        (success, response) = get_mets(document_id)
-        if not success:
-            continue # don't need to keep processing because it doesn't exist in DRS
-        count = count + 1
-        converted_json = mets.main(response, document_id)
-        models.add_or_update_manifest(document_id, converted_json)
-
-    return HttpResponse("Successfully refreshed %s of %s documents" % (count, len(ids)))
-
-# Force refresh all originally MODS documents in the db
-# Might need to tweak so not hitting DRS as frequently
-# TODO: bulk load to elasticsesarch
-def refresh_mods_all(request):
-    pass
-
-# Force refresh all documents in db (originally METS and MODS)
-# Same issues as other refresh functions
-def refresh_all(request):
-    pass
+    (success, response) = get_mods(document_id)
+    if not success:
+        return response
+    
+    converted_json = mods.main(response, document_id)
+    models.add_or_update_manifest(document_id, converted_json)
+    http_response = HttpResponse(converted_json)
+    add_headers(http_response)
+    return http_response
 
 # this is a hack because the javascript uses relative paths for the PNG files, and Django creates the incorrect URL for them
 # Need to find a better and more permanent solution
@@ -131,6 +113,7 @@ def get_image(request, filename):
     return HttpResponseRedirect("/static/manifests/images/openseadragon/%s" % filename)
 
 ## HELPER FUNCTIONS ##
+# Gets METS XML from DRS
 def get_mets(document_id):
     mets_url = METS_DRS_URL+document_id
     try:
@@ -143,6 +126,7 @@ def get_mets(document_id):
     response_doc = response.read()
     return (True, response_doc)
 
+# Gets MODS XML from Presto API
 def get_mods(document_id):
     mods_url = MODS_DRS_URL+document_id
     try:
@@ -155,11 +139,13 @@ def get_mods(document_id):
     mods = response.read()
     return (True, mods)
 
+# Adds headers to Response for returning JSON that other Mirador instances can access
 def add_headers(response):
     response["Access-Control-Allow-Origin"] = "*"
     response["Content-Type"] = "application/ld+json"
     return response
 
+# Uses other helper methods to create JSON
 def get_mets_manifest(document_id):
     # Check if manifest exists
     has_manifest = models.manifest_exists(document_id)
@@ -183,6 +169,7 @@ def get_mets_manifest(document_id):
         json_doc = models.get_manifest(document_id)
         return (True, json.dumps(json_doc))
 
+# Uses other helper methods to create JSON
 def get_mods_manifest(document_id):
     # Check if manifest exists
     has_manifest = models.manifest_exists(document_id)
