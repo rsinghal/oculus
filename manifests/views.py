@@ -19,7 +19,7 @@ def view_mets(request, document_id):
         (success, response) = get_mets_manifest(doc_id)
         if success:
             title = models.get_manifest_title(doc_id)
-            uri = "http://localhost:8000/manifests/mets/"+doc_id # TODO: fix
+            uri = "/manifests/mets/"+doc_id # TODO: fix
             manifests[uri] = title
 
     if len(manifests) > 0:

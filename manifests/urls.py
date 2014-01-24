@@ -10,5 +10,7 @@ urlpatterns = patterns('',
     url(r'^delete/(?P<document_id>[A-Za-z\d]+)$', views.delete, name='delete'),
     url(r'^refresh/mets/(?P<document_id>[A-Za-z\d]+)$', views.refresh_mets, name='refresh_mets'),
     url(r'^refresh/mods/(?P<document_id>[A-Za-z\d]+)$', views.refresh_mods, name='refresh_mods'),
-    url(r'^view/(mets|mods)/images/openseadragon/(?P<filename>.*)$', views.get_image), # hack to deal with this problem
+    # probably won't find a better solution for images because won't actually serve 
+    # HTML pages with mirador out of django (it's just for testing/demo purposes)
+    url(r'^view/(mets|mods)/images/openseadragon/(?P<filename>.*)$', views.get_image), 
 )
