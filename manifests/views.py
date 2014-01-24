@@ -35,7 +35,7 @@ def view_mods(request, document_id):
         (success, response) = get_mods_manifest(doc_id)
         if success:
             title = models.get_manifest_title(doc_id)
-            uri = "http://localhost:8000/manifests/mods/"+doc_id
+            uri = "/manifests/mods/"+doc_id
             manifests[uri] = title
 
     if len(manifests) > 0:
