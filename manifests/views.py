@@ -9,6 +9,7 @@ import urllib2
 # Create your views here.
 
 METS_DRS_URL = "http://fds.lib.harvard.edu/fds/deliver/"
+METS_API_URL = "http://pds.lib.harvard.edu/pds/get/"
 MODS_DRS_URL = "http://webservices.lib.harvard.edu/rest/MODS/via/"
 
 # view one or more mets object in mirador
@@ -25,7 +26,8 @@ def view_mets(request, document_id):
     if len(manifests) > 0:
         return render(request, 'manifests/manifest.html', {'manifests' : manifests})
     else:
-        return HttpResponse("The requested document ID(s) %s could not be displayed" % document_id, status=404) # 404 HttpResponse object
+        return response
+    #HttpResponse("The requested document ID(s) %s could not be displayed" % document_id, status=404) # 404 HttpResponse object
 
 # view one or more mods object in mirador
 def view_mods(request, document_id):
@@ -126,6 +128,17 @@ def get_mets(document_id):
     response_doc = response.read()
     return (True, response_doc)
 
+def mets_jp2_check(document_id):
+    api_url = METS_API_URL+document_id
+    response = urllib2.urlopen(api_url)
+    response_doc = response.read()
+    # probably don't actually need to parse this as an XML document
+    # just look for this particular string in the response
+    if "<img_mimetype>jp2</img_mimetype>" in response_doc:
+        return True
+    else:
+        return False
+
 # Gets MODS XML from Presto API
 def get_mods(document_id):
     mods_url = MODS_DRS_URL+document_id
@@ -153,6 +166,11 @@ def get_mets_manifest(document_id):
     ## TODO: add last modified check
 
     if not has_manifest:
+        # check if mets object has jp2 images, which will work in the image server
+        has_jp2 = mets_jp2_check(document_id)
+        if not has_jp2:
+            return (has_jp2, HttpResponse("The document ID %s does not have JP2 images" % document_id, status=404))
+
         # If not, get METS from DRS
         (success, response) = get_mets(document_id)
         
