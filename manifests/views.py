@@ -10,7 +10,9 @@ import urllib2
 
 METS_DRS_URL = "http://fds.lib.harvard.edu/fds/deliver/"
 METS_API_URL = "http://pds.lib.harvard.edu/pds/get/"
-MODS_DRS_URL = "http://webservices.lib.harvard.edu/rest/MODS/via/"
+MODS_DRS_URL = "http://webservices.lib.harvard.edu/rest/MODS/"
+
+sources = {"drs": "mets", "via": "mods", "hollis": "mods"}
 
 # view one or more mets object in mirador
 def view_mets(request, document_id):
@@ -45,6 +47,27 @@ def view_mods(request, document_id):
     else:
         return HttpResponse("The requested document ID(s) %s could not be displayed" % document_id, status=404) # 404 HttpResponse object
 
+def view(request, document_id):
+    doc_ids = document_id.split('/')
+    manifests = {}
+    for doc_id in doc_ids:
+        parts = doc_id.split(':')
+        if len(parts) != 2:
+            continue # not a valid id, don't display
+        source = parts[0]
+        id = parts[1]
+        print source, id
+        (success, response) = get_manifest(id, source)
+        if success:
+            title = models.get_manifest_title(id, source)
+            uri = "/manifests/"+source+":"+id
+            manifests[uri] = title
+
+    if len(manifests) > 0:
+        return render(request, 'manifests/manifest.html', {'manifests' : manifests})
+    else:
+        return HttpResponse("The requested document ID(s) %s could not be displayed" % document_id, status=404) # 404 HttpResponse object
+
 # Returns a IIIF manifest of a METS document in the DRS
 # Checks if DB has it, otherwise creates it
 def manifest_mets(request, document_id):
@@ -67,6 +90,20 @@ def manifest_mods(request, document_id):
     else:
         return response_doc # 404 HttpResponse
 
+def manifest(request, document_id):
+    parts = document_id.split(":")
+    if len(parts) != 2:
+        return HttpResponse("Invalid document ID. Format: [data source]:[ID]", status=404)
+    source = parts[0]
+    id = parts[1]
+    (success, response_doc) = get_manifest(id, source)
+    if success:
+        response = HttpResponse(response_doc)
+        add_headers(response)
+        return response
+    else:
+        return response_doc # 404 HttpResponse
+            
 # Delete any document from db
 def delete(request, document_id):
     # Check if manifest exists
@@ -116,7 +153,7 @@ def get_image(request, filename):
 
 ## HELPER FUNCTIONS ##
 # Gets METS XML from DRS
-def get_mets(document_id):
+def get_mets(document_id, source):
     mets_url = METS_DRS_URL+document_id
     try:
         response = urllib2.urlopen(mets_url)
@@ -140,8 +177,8 @@ def mets_jp2_check(document_id):
         return False
 
 # Gets MODS XML from Presto API
-def get_mods(document_id):
-    mods_url = MODS_DRS_URL+document_id
+def get_mods(document_id, source):
+    mods_url = MODS_DRS_URL+source+"/"+document_id
     try:
         response = urllib2.urlopen(mods_url)
     except urllib2.HTTPError, err:
@@ -209,4 +246,45 @@ def get_mods_manifest(document_id):
     else:
         # return JSON from db
         json_doc = models.get_manifest(document_id)
+        return (True, json.dumps(json_doc))
+
+def get_manifest(document_id, source):
+    # Check if manifest exists
+    has_manifest = models.manifest_exists(document_id, source)
+
+    ## TODO: add last modified check
+
+    if not has_manifest:
+        # If not, get MODS or METS from DRS
+        xml_type = sources[source]
+        if xml_type == "mods":
+            ## TODO: check image types??
+            (success, response) = get_mods(document_id, source)
+        elif xml_type == "mets":
+            # check if mets object has jp2 images, only those will work in image server
+            has_jp2 = mets_jp2_check(document_id)
+            if not has_jp2:
+                return (has_jp2, HttpResponse("The document ID %s does not have JP2 images" % document_id, status=404))
+            
+            (success, response) = get_mets(document_id, source)
+        else:
+            success = False
+            response = HttpResponse("Invalid source type", status=404)
+
+        if not success:
+            return (success, response) # This is actually the 404 HttpResponse, so return and end the function
+ 
+        # Convert to shared canvas model if successful
+        if xml_type == "mods":
+            converted_json = mods.main(response, document_id)
+        elif xml_type == "mets":
+            converted_json = mets.main(response, document_id)
+        else:
+            pass
+        # Store to elasticsearch
+        models.add_or_update_manifest(document_id, converted_json, source)
+        return (success, converted_json)
+    else:
+        # return JSON from db
+        json_doc = models.get_manifest(document_id, source)
         return (True, json.dumps(json_doc))

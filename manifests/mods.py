@@ -34,6 +34,8 @@ def main(data, outputIdentifier):
 	#manifestUriBase += "%s/%s/" % (identifierType, identifier)
 	manifestUriBase += "%s/" % (outputIdentifier)
 
+	## List of different image labels
+	## Full Image, Color digital image available
 	images = dom.xpath('/mods:mods/mods:location/mods:url[@displayLabel="Full Image"]/text()', namespaces=ALLNS)
 
 	print images
@@ -44,7 +46,7 @@ def main(data, outputIdentifier):
 		info['label'] = str(counter+1)
 		response = urllib2.urlopen(im)
 		ids_url = response.geturl()
-		image_id = ids_url[ids_url.rfind('/')+1:]
+		image_id = ids_url[ids_url.rfind('/')+1:] # and before any ? in URL
 		info['image'] = image_id
 		canvasInfo.append(info)
 
