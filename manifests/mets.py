@@ -12,7 +12,10 @@ imageHash = {}
 
 def process_struct_map(st, canvasInfo):
 	info = {}
-	info['label'] = st.xpath('./@LABEL')[0]
+	if 'LABEL' in st.attrib:
+		info['label'] = st.xpath('./@LABEL')[0]
+	else:
+		info['label'] = st.xpath('./@ORDER')[0]
 
 	for fid in st.xpath('.//mets:fptr/@FILEID', namespaces=ALLNS):
 		if fid in imageHash.keys():
@@ -51,7 +54,7 @@ def main(data, outputIdentifier):
 	for img in images:
 		imageHash[img.xpath('./@ID', namespaces=ALLNS)[0]] = img.xpath('./mets:FLocat/@xlink:href', namespaces = ALLNS)[0]
 
-	print imageHash
+	#print imageHash
 	canvasInfo = []
 	for st in struct:
 		subdivs = st.xpath('./mets:div[@LABEL]', namespaces = ALLNS)
@@ -116,7 +119,11 @@ def main(data, outputIdentifier):
 	rangeInfo = []
 	# build table of contents using Range and Structures
 	for st in struct:
-		label = st.xpath('./@LABEL')[0]
+		if 'LABEL' in st.attrib:
+			label = st.xpath('./@LABEL')[0]
+		else:
+			label = st.xpath('./@ORDER')[0]
+
 		#print "Label: %s" % label
 		subdivs = st.xpath('./mets:div[@LABEL]', namespaces = ALLNS)
 		while len(subdivs) > 0:
