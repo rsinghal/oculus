@@ -44,7 +44,10 @@ def main(data, outputIdentifier):
 		ids_url = response.geturl()
 		url_idx = ids_url.rfind('/')
 		q_idx = ids_url.rfind('?') # and before any ? in URL
-		image_id = ids_url[url_idx+1:q_idx] 
+		if q_idx != -1:
+			image_id = ids_url[url_idx+1:q_idx] 
+		else:
+			image_id = ids_url[url_idx+1:]
 		info['image'] = image_id
 		canvasInfo.append(info)
 
