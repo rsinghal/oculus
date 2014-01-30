@@ -28,15 +28,11 @@ def main(data, outputIdentifier):
 		# XXX Put in other mappings here
 		viewingHint = "individuals"
 
-	identifier = dom.xpath('/mods:mods/mods:identifier/text()', namespaces=ALLNS)[0]
-	identifierType = dom.xpath('/mods:mods/mods:identifier/@type', namespaces=ALLNS)[0]
-
-	#manifestUriBase += "%s/%s/" % (identifierType, identifier)
 	manifestUriBase += "%s/" % (outputIdentifier)
 
 	## List of different image labels
-	## Full Image, Color digital image available
-	images = dom.xpath('/mods:mods/mods:location/mods:url[@displayLabel="Full Image"]/text()', namespaces=ALLNS)
+	## @displayLabel = Full Image, @note = Color digital image available
+	images = dom.xpath('/mods:mods/mods:location/mods:url[@displayLabel="Full Image" or @note = "Color digital image available"]/text()', namespaces=ALLNS)
 
 	print images
 
@@ -46,7 +42,9 @@ def main(data, outputIdentifier):
 		info['label'] = str(counter+1)
 		response = urllib2.urlopen(im)
 		ids_url = response.geturl()
-		image_id = ids_url[ids_url.rfind('/')+1:] # and before any ? in URL
+		url_idx = ids_url.rfind('/')
+		q_idx = ids_url.rfind('?') # and before any ? in URL
+		image_id = ids_url[url_idx+1:q_idx] 
 		info['image'] = image_id
 		canvasInfo.append(info)
 

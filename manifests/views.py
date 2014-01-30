@@ -179,10 +179,11 @@ def mets_jp2_check(document_id):
 # Gets MODS XML from Presto API
 def get_mods(document_id, source):
     mods_url = MODS_DRS_URL+source+"/"+document_id
+    print mods_url
     try:
         response = urllib2.urlopen(mods_url)
     except urllib2.HTTPError, err:
-        if err.code == 500: ## TODO
+        if err.code == 500 or err.code == 403: ## TODO
             # document does not exist in DRS
             return (False, HttpResponse("The document ID %s does not exist" % document_id, status=404))
 
