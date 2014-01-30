@@ -14,41 +14,9 @@ MODS_DRS_URL = "http://webservices.lib.harvard.edu/rest/MODS/"
 
 sources = {"drs": "mets", "via": "mods", "hollis": "mods"}
 
-# view one or more mets object in mirador
-def view_mets(request, document_id):
-    doc_ids = document_id.split(";")
-    manifests = {}
-    for doc_id in doc_ids:
-        (success, response) = get_mets_manifest(doc_id)
-        if success:
-            title = models.get_manifest_title(doc_id)
-            uri = "/manifests/mets/"+doc_id # TODO: fix
-            manifests[uri] = title
-
-    if len(manifests) > 0:
-        return render(request, 'manifests/manifest.html', {'manifests' : manifests})
-    else:
-        return response
-    #HttpResponse("The requested document ID(s) %s could not be displayed" % document_id, status=404) # 404 HttpResponse object
-
-# view one or more mods object in mirador
-def view_mods(request, document_id):
-    doc_ids = document_id.split(";")
-    manifests = {}
-    for doc_id in doc_ids:
-        (success, response) = get_mods_manifest(doc_id)
-        if success:
-            title = models.get_manifest_title(doc_id)
-            uri = "/manifests/mods/"+doc_id
-            manifests[uri] = title
-
-    if len(manifests) > 0:
-        return render(request, 'manifests/manifest.html', {'manifests' : manifests})
-    else:
-        return HttpResponse("The requested document ID(s) %s could not be displayed" % document_id, status=404) # 404 HttpResponse object
-
+# view any number of MODS or METS objects
 def view(request, document_id):
-    doc_ids = document_id.split('/')
+    doc_ids = document_id.split(';')
     manifests = {}
     for doc_id in doc_ids:
         parts = doc_id.split(':')
@@ -57,7 +25,7 @@ def view(request, document_id):
         source = parts[0]
         id = parts[1]
         print source, id
-        (success, response) = get_manifest(id, source)
+        (success, response) = get_manifest(id, source, False)
         if success:
             title = models.get_manifest_title(id, source)
             uri = "/manifests/"+source+":"+id
@@ -68,35 +36,15 @@ def view(request, document_id):
     else:
         return HttpResponse("The requested document ID(s) %s could not be displayed" % document_id, status=404) # 404 HttpResponse object
 
-# Returns a IIIF manifest of a METS document in the DRS
+# Returns a IIIF manifest of a METS or MODS document in DRS
 # Checks if DB has it, otherwise creates it
-def manifest_mets(request, document_id):
-    (success, response_doc) = get_mets_manifest(document_id)
-    if success:
-        response = HttpResponse(response_doc)
-        add_headers(response)
-        return response
-    else:
-        return response_doc # 404 HttpResponse
-
-# Returns a IIIF manifest of a MODS document in the DRS
-# Checks if DB has it, otherwise creates it
-def manifest_mods(request, document_id):
-    (success, response_doc) = get_mods_manifest(document_id)
-    if success:
-        response = HttpResponse(response_doc)
-        add_headers(response)
-        return response
-    else:
-        return response_doc # 404 HttpResponse
-
 def manifest(request, document_id):
     parts = document_id.split(":")
     if len(parts) != 2:
         return HttpResponse("Invalid document ID. Format: [data source]:[ID]", status=404)
     source = parts[0]
     id = parts[1]
-    (success, response_doc) = get_manifest(id, source)
+    (success, response_doc) = get_manifest(id, source, False)
     if success:
         response = HttpResponse(response_doc)
         add_headers(response)
@@ -107,44 +55,35 @@ def manifest(request, document_id):
 # Delete any document from db
 def delete(request, document_id):
     # Check if manifest exists
-    has_manifest = models.manifest_exists(document_id)
+    parts = document_id.split(":")
+    if len(parts) != 2:
+        return HttpResponse("Invalid document ID. Format: [data source]:[ID]", status=404)
+    source = parts[0]
+    id = parts[1]
+    has_manifest = models.manifest_exists(id, source)
 
     if has_manifest:
-        models.delete_manifest(document_id)
+        models.delete_manifest(id, source)
         return HttpResponse("Document ID %s has been deleted" % document_id)
     else:
         return HttpResponse("Document ID %s does not exist in the database" % document_id, status=404)
 
 # Force refresh a single document
-# Pull METS, rerun conversion script, and store in db
-def refresh_mets(request, document_id):
-    (success, response) = get_mets(document_id)
+# Pull METS or MODS, rerun conversion script, and store in db
+def refresh(request, document_id):
+    parts = document_id.split(":")
+    if len(parts) != 2:
+        return HttpResponse("Invalid document ID. Format: [data source]:[ID]", status=404)
+    source = parts[0]
+    id = parts[1]
+    (success, response_doc) = get_manifest(id, source, True)
 
-    if not success:
-        return response # This is actually the 404 HttpResponse, so return and end the function
-
-    # Convert to shared canvas model if successful
-    converted_json = mets.main(response, document_id)
-
-    # Store to elasticsearch
-    models.add_or_update_manifest(document_id, converted_json)
-
-    http_response = HttpResponse(converted_json)
-    add_headers(http_response)
-    return http_response
-
-# Refresh a single document
-# Pull MODS, rerun conversion script, store in db
-def refresh_mods(request, document_id):
-    (success, response) = get_mods(document_id)
-    if not success:
+    if success:
+        response = HttpResponse(response_doc)
+        add_headers(response)
         return response
-    
-    converted_json = mods.main(response, document_id)
-    models.add_or_update_manifest(document_id, converted_json)
-    http_response = HttpResponse(converted_json)
-    add_headers(http_response)
-    return http_response
+    else:
+        return response_doc # This is actually the 404 HttpResponse, so return and end the function
 
 # this is a hack because the javascript uses relative paths for the PNG files, and Django creates the incorrect URL for them
 # Need to find a better and more permanent solution
@@ -197,65 +136,13 @@ def add_headers(response):
     return response
 
 # Uses other helper methods to create JSON
-def get_mets_manifest(document_id):
-    # Check if manifest exists
-    has_manifest = models.manifest_exists(document_id)
-
-    ## TODO: add last modified check
-
-    if not has_manifest:
-        # check if mets object has jp2 images, which will work in the image server
-        has_jp2 = mets_jp2_check(document_id)
-        if not has_jp2:
-            return (has_jp2, HttpResponse("The document ID %s does not have JP2 images" % document_id, status=404))
-
-        # If not, get METS from DRS
-        (success, response) = get_mets(document_id)
-        
-        if not success:
-            return (success, response) # This is actually the 404 HttpResponse, so return and end the function
- 
-        # Convert to shared canvas model if successful
-        converted_json = mets.main(response, document_id)
-        # Store to elasticsearch
-        models.add_or_update_manifest(document_id, converted_json)        
-        return (success, converted_json)
-    else:
-        # return JSON from db
-        json_doc = models.get_manifest(document_id)
-        return (True, json.dumps(json_doc))
-
-# Uses other helper methods to create JSON
-def get_mods_manifest(document_id):
-    # Check if manifest exists
-    has_manifest = models.manifest_exists(document_id)
-
-    ## TODO: add last modified check
-
-    if not has_manifest:
-        # If not, get MODS from DRS
-        (success, response) = get_mods(document_id)
-        
-        if not success:
-            return (success, response) # This is actually the 404 HttpResponse, so return and end the function
- 
-        # Convert to shared canvas model if successful
-        converted_json = mods.main(response, document_id)
-        # Store to elasticsearch
-        models.add_or_update_manifest(document_id, converted_json)        
-        return (success, converted_json)
-    else:
-        # return JSON from db
-        json_doc = models.get_manifest(document_id)
-        return (True, json.dumps(json_doc))
-
-def get_manifest(document_id, source):
+def get_manifest(document_id, source, force_refresh):
     # Check if manifest exists
     has_manifest = models.manifest_exists(document_id, source)
 
     ## TODO: add last modified check
 
-    if not has_manifest:
+    if not has_manifest or force_refresh:
         # If not, get MODS or METS from DRS
         xml_type = sources[source]
         if xml_type == "mods":
