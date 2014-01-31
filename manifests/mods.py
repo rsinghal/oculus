@@ -32,9 +32,9 @@ def main(data, outputIdentifier):
 
 	## List of different image labels
 	## @displayLabel = Full Image, @note = Color digital image available
-	images = dom.xpath('/mods:mods/mods:location/mods:url[@displayLabel="Full Image" or @note = "Color digital image available"]/text()', namespaces=ALLNS)
+	images = dom.xpath('/mods:mods//mods:location/mods:url[@displayLabel="Full Image" or @note = "Color digital image available"]/text()', namespaces=ALLNS)
 
-	print images
+	print "Images list", images
 
 	canvasInfo = []
 	for (counter, im) in enumerate(images):
