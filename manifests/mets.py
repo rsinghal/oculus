@@ -51,6 +51,14 @@ def main(data, outputIdentifier):
 	images = dom.xpath('/mets:mets/mets:fileSec/mets:fileGrp/mets:file[@MIMETYPE="image/jp2"]', namespaces=ALLNS)
 	struct = dom.xpath('/mets:mets/mets:structMap/mets:div[@TYPE="CITATION"]/mets:div', namespaces=ALLNS)
 
+	# Check if the object has a stitched version(s) already made.  Use only those
+	for st in struct:
+		stitchCheck = st.xpath('./@LABEL[contains(., "stitched")]', namespaces=ALLNS)
+		if stitchCheck:
+			#print(etree.tostring(st, pretty_print=True))
+			struct = st
+			break
+
 	for img in images:
 		imageHash[img.xpath('./@ID', namespaces=ALLNS)[0]] = img.xpath('./mets:FLocat/@xlink:href', namespaces = ALLNS)[0]
 
