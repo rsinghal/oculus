@@ -24,7 +24,7 @@ def view(request, document_id):
             continue # not a valid id, don't display
         source = parts[0]
         id = parts[1]
-        print source, id
+        #print source, id
         (success, response) = get_manifest(id, source, False)
         if success:
             title = models.get_manifest_title(id, source)
@@ -165,6 +165,10 @@ def get_manifest(document_id, source, force_refresh):
         # Convert to shared canvas model if successful
         if xml_type == "mods":
             converted_json = mods.main(response, document_id)
+            # check if this is, in fact, a PDS object masked as a hollis request
+            json_doc = json.loads(converted_json)
+            if 'pds' in json_doc:
+                id = json_doc['pds']
         elif xml_type == "mets":
             converted_json = mets.main(response, document_id)
         else:

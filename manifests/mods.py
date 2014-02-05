@@ -32,7 +32,7 @@ def main(data, outputIdentifier):
 
 	## List of different image labels
 	## @displayLabel = Full Image, @note = Color digital image available
-	images = dom.xpath('/mods:mods//mods:location/mods:url[@displayLabel="Full Image" or @note = "Color digital image available"]/text()', namespaces=ALLNS)
+	images = dom.xpath('/mods:mods//mods:location/mods:url[@displayLabel="Full Image" or contains(@note, "Color digital image")]/text()', namespaces=ALLNS)
 
 	print "Images list", images
 
@@ -48,6 +48,11 @@ def main(data, outputIdentifier):
 			image_id = ids_url[url_idx+1:q_idx] 
 		else:
 			image_id = ids_url[url_idx+1:]
+
+		if "pds.lib.harvard.edu" in ids_url:
+			# this is a hollis record that points to a PDS/METS object, should not keep processing as a MODS
+			return json.dumps({"pds":image_id}, indent=4, sort_keys=True)
+
 		info['image'] = image_id
 		canvasInfo.append(info)
 

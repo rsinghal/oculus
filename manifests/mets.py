@@ -43,9 +43,6 @@ def main(data, outputIdentifier):
 		# XXX Put in other mappings here
 		viewingHint = "individuals"
 
-	identifier = dom.xpath('/mets:mets/mets:dmdSec/mets:mdWrap[@MDTYPE="MODS"]/mets:xmlData/mods:mods/mods:identifier/text()', namespaces=ALLNS)[0]
-	identifierType = dom.xpath('/mets:mets/mets:dmdSec/mets:mdWrap[@MDTYPE="MODS"]/mets:xmlData/mods:mods/mods:identifier/@type', namespaces=ALLNS)[0]
-
 	manifestUriBase += "%s/" % (outputIdentifier)
 
 	images = dom.xpath('/mets:mets/mets:fileSec/mets:fileGrp/mets:file[@MIMETYPE="image/jp2"]', namespaces=ALLNS)
@@ -86,7 +83,7 @@ def main(data, outputIdentifier):
 		"@id": manifestUriBase + "manifest.json",
 		"@type":"sc:Manifest",
 		"label":manifestLabel,
-		"attribution":"Provided by the Houghton Library, Harvard University",
+		"attribution":"Provided by Harvard University",
 		"viewingHint":viewingHint,
 		"sequences": [
 			{
