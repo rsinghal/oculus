@@ -25,10 +25,10 @@ def view(request, document_id):
         source = parts[0]
         id = parts[1]
         #print source, id
-        (success, response) = get_manifest(id, source, False)
+        (success, response, real_id, real_source) = get_manifest(id, source, False)
         if success:
-            title = models.get_manifest_title(id, source)
-            uri = "/manifests/"+source+":"+id
+            title = models.get_manifest_title(real_id, real_source)
+            uri = "/manifests/"+real_source+":"+real_id
             manifests[uri] = title
 
     if len(manifests) > 0:
@@ -44,7 +44,7 @@ def manifest(request, document_id):
         return HttpResponse("Invalid document ID. Format: [data source]:[ID]", status=404)
     source = parts[0]
     id = parts[1]
-    (success, response_doc) = get_manifest(id, source, False)
+    (success, response_doc, real_id, real_source) = get_manifest(id, source, False)
     if success:
         response = HttpResponse(response_doc)
         add_headers(response)
@@ -76,7 +76,7 @@ def refresh(request, document_id):
         return HttpResponse("Invalid document ID. Format: [data source]:[ID]", status=404)
     source = parts[0]
     id = parts[1]
-    (success, response_doc) = get_manifest(id, source, True)
+    (success, response_doc, real_id, real_source) = get_manifest(id, source, True)
 
     if success:
         response = HttpResponse(response_doc)
@@ -118,7 +118,7 @@ def mets_jp2_check(document_id):
 # Gets MODS XML from Presto API
 def get_mods(document_id, source):
     mods_url = MODS_DRS_URL+source+"/"+document_id
-    print mods_url
+    #print mods_url
     try:
         response = urllib2.urlopen(mods_url)
     except urllib2.HTTPError, err:
@@ -166,17 +166,21 @@ def get_manifest(document_id, source, force_refresh):
         if xml_type == "mods":
             converted_json = mods.main(response, document_id)
             # check if this is, in fact, a PDS object masked as a hollis request
+            # If so, get the manifest with the DRS METS ID and return that
             json_doc = json.loads(converted_json)
             if 'pds' in json_doc:
                 id = json_doc['pds']
+                return get_manifest(id, 'drs', False)
         elif xml_type == "mets":
             converted_json = mets.main(response, document_id)
         else:
             pass
         # Store to elasticsearch
         models.add_or_update_manifest(document_id, converted_json, source)
-        return (success, converted_json)
+        # Return the docuemnt_id and source in case this is a hollis record
+        # that also has METS/PDS
+        return (success, converted_json, document_id, source)
     else:
         # return JSON from db
         json_doc = models.get_manifest(document_id, source)
-        return (True, json.dumps(json_doc))
+        return (True, json.dumps(json_doc), document_id, source)
