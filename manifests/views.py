@@ -99,6 +99,7 @@ def get_mets(document_id, source):
     except urllib2.HTTPError, err:
         if err.code == 500 or err.code == 404:
             # document does not exist in DRS, might need to add more error codes
+            # TODO: FDS often seems to fail on its first request...maybe try again? 
             return (False, HttpResponse("The document ID %s does not exist" % document_id, status=404))
 
     response_doc = response.read()
@@ -152,7 +153,7 @@ def get_manifest(document_id, source, force_refresh):
             # check if mets object has jp2 images, only those will work in image server
             has_jp2 = mets_jp2_check(document_id)
             if not has_jp2:
-                return (has_jp2, HttpResponse("The document ID %s does not have JP2 images" % document_id, status=404))
+                return (has_jp2, HttpResponse("The document ID %s does not have JP2 images" % document_id, status=404), document_id, source)
             
             (success, response) = get_mets(document_id, source)
         else:
@@ -160,7 +161,7 @@ def get_manifest(document_id, source, force_refresh):
             response = HttpResponse("Invalid source type", status=404)
 
         if not success:
-            return (success, response) # This is actually the 404 HttpResponse, so return and end the function
+            return (success, response, document_id, source) # This is actually the 404 HttpResponse, so return and end the function
  
         # Convert to shared canvas model if successful
         if xml_type == "mods":

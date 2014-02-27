@@ -100,7 +100,7 @@ def main(data, outputIdentifier):
 			"@id": manifestUriBase + "canvas/canvas-%s.json" % cvs['image'],
 			"@type": "sc:Canvas",
 			"label": cvs['label'],
-			"resources": [
+			"images": [
 				{
 					"@id":manifestUriBase+"annotation/anno-%s.json" % cvs['image'],
 					"@type": "oa:Annotation",

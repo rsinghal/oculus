@@ -31,8 +31,8 @@ def main(data, outputIdentifier):
 	manifestUriBase += "%s/" % (outputIdentifier)
 
 	## List of different image labels
-	## @displayLabel = Full Image, @note = Color digital image available
-	images = dom.xpath('/mods:mods//mods:location/mods:url[@displayLabel="Full Image" or contains(@note, "Color digital image")]/text()', namespaces=ALLNS)
+	## @displayLabel = Full Image, @note = Color digital image available, @note = Harvard Map Collection copy image
+	images = dom.xpath('/mods:mods//mods:location/mods:url[@displayLabel="Full Image" or contains(@note, "Color digital image" or contains(@note, "copy image"))]/text()', namespaces=ALLNS)
 
 	print "Images list", images
 
