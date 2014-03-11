@@ -10,6 +10,14 @@ xlinkNS = 'http://www.w3.org/1999/xlink'
 ALLNS = {'mets':metsNS, 'mods':modsNS, 'xlink':xlinkNS}
 imageHash = {}
 
+## TODO: Other image servers?
+imageUriBase = "http://ids.lib.harvard.edu/ids/iiif/"
+imageUriSuffix = "/full/full/full/native"
+manifestUriBase = "http://oculus-dev.lib.harvard.edu/manifests/"
+serviceBase = imageUriBase
+profileLevel = "http://library.stanford.edu/iiif/image-api/1.1/conformance.html#level1"
+attribution = "Provided by Harvard University"
+
 def process_struct_map(st, canvasInfo):
 	info = {}
 	if 'LABEL' in st.attrib:
@@ -24,15 +32,8 @@ def process_struct_map(st, canvasInfo):
 	if 'image' in info:
 		canvasInfo.append(info)
 
-def main(data, outputIdentifier):
+def main(data, document_id, source):
 	dom = etree.XML(data)
-
-	imageUriBase = "http://ids.lib.harvard.edu/ids/iiif/"
-	imageUriSuffix = "/full/full/full/native"
-	manifestUriBase = "http://ids.lib.harvard.edu/iiif/metadata/"
-	serviceBase = imageUriBase
-	profileLevel = "http://library.stanford.edu/iiif/image-api/1.1/conformance.html#level1"
-
 
 	manifestLabel = dom.xpath('/mets:mets/@LABEL', namespaces=ALLNS)[0]
 	manifestType = dom.xpath('/mets:mets/@TYPE', namespaces=ALLNS)[0]
@@ -42,8 +43,9 @@ def main(data, outputIdentifier):
 	else:
 		# XXX Put in other mappings here
 		viewingHint = "individuals"
+	## TODO: add viewingDirection
 
-	manifestUriBase += "%s/" % (outputIdentifier)
+	manifest_uri = manifestUriBase + "%s:%s" % (source, document_id)
 
 	images = dom.xpath('/mets:mets/mets:fileSec/mets:fileGrp/mets:file[@MIMETYPE="image/jp2"]', namespaces=ALLNS)
 	struct = dom.xpath('/mets:mets/mets:structMap/mets:div[@TYPE="CITATION"]/mets:div', namespaces=ALLNS)
@@ -80,14 +82,14 @@ def main(data, outputIdentifier):
 
 	mfjson = {
 		"@context":"http://www.shared-canvas.org/ns/context.json",
-		"@id": manifestUriBase + "manifest.json",
+		"@id": manifest_uri,
 		"@type":"sc:Manifest",
 		"label":manifestLabel,
-		"attribution":"Provided by Harvard University",
+		"attribution":attribution,
 		"viewingHint":viewingHint,
 		"sequences": [
 			{
-				"@id": manifestUriBase + "sequence/normal.json",
+				"@id": manifest_uri + "/sequence/normal.json",
 				"@type": "sc:Sequence",
 			}
 		]
@@ -97,12 +99,12 @@ def main(data, outputIdentifier):
 
 	for cvs in canvasInfo:
 		cvsjson = {
-			"@id": manifestUriBase + "canvas/canvas-%s.json" % cvs['image'],
+			"@id": manifest_uri + "/canvas/canvas-%s.json" % cvs['image'],
 			"@type": "sc:Canvas",
 			"label": cvs['label'],
 			"images": [
 				{
-					"@id":manifestUriBase+"annotation/anno-%s.json" % cvs['image'],
+					"@id":manifest_uri+"/annotation/anno-%s.json" % cvs['image'],
 					"@type": "oa:Annotation",
 					"motivation": "sc:painting",
 					"resource": {
@@ -114,7 +116,7 @@ def main(data, outputIdentifier):
 						  "profile": profileLevel
 						},
 					},
-					"on": manifestUriBase + "canvas/canvas-%s.json" % cvs['image']
+					"on": manifest_uri + "/canvas/canvas-%s.json" % cvs['image']
 				}
 			]
 		}
@@ -148,21 +150,22 @@ def main(data, outputIdentifier):
 	return output
 
 if __name__ == "__main__":
-	if (len(sys.argv) < 3):
+	if (len(sys.argv) < 4):
 		sys.stderr.write('not enough args\n')
-		sys.stderr.write('usage: mets.py input manifest_identifier\n')
+		sys.stderr.write('usage: mets.py input manifest_identifier data_source\n')
 		sys.exit(0)
 
 	inputfile = sys.argv[1]
-	outputIdentifier = sys.argv[2]
-	outputfile = outputIdentifier +  ".json"
+	document_id = sys.argv[2]
+	source = sys.argv[3]
+	outputfile = source + '-' + document_id +  ".json"
 	isDrs1 = True; # add functionality for drs2
 
 	fh = file(inputfile)
 	data = fh.read()
 	fh.close()
 
-	output = main(data, outputIdentifier)
+	output = main(data, document_id, source)
 	fh = file(outputfile, 'w')
 	fh.write(output)
 	fh.close()

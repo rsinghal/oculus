@@ -10,6 +10,7 @@ urlpatterns = patterns('',
     url(r'^delete/(?P<document_id>[a-z]+:[A-Za-z\d]+)$', views.delete, name='delete'),
 
     url(r'^refresh/(?P<document_id>[a-z]+:[A-Za-z\d]+)$', views.refresh, name='refresh'),
+    url(r'^refresh/source/(?P<source>[a-z]+)$', views.refresh_by_source, name='refresh_by_source'),
 
     # probably won't find a better solution for images because won't actually serve 
     # HTML pages with mirador out of django (it's just for testing/demo purposes)

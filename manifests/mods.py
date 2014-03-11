@@ -9,14 +9,15 @@ modsNS = 'http://www.loc.gov/mods/v3'
 ALLNS = {'mods':modsNS}
 imageHash = {}
 
-def main(data, outputIdentifier):
-	dom = etree.XML(data)
+imageUriBase = "http://ids.lib.harvard.edu/ids/iiif/"
+imageUriSuffix = "/full/full/full/native"
+manifestUriBase = "http://oculus-dev.lib.harvard.edu/manifests/"
+serviceBase = imageUriBase
+profileLevel = "http://library.stanford.edu/iiif/image-api/1.1/conformance.html#level1"
+attribution = "Provided by Harvard University"
 
-	imageUriBase = "http://ids.lib.harvard.edu/ids/iiif/"
-	imageUriSuffix = "/full/full/full/native"
-	manifestUriBase = "http://ids.lib.harvard.edu/iiif/metadata/"
-	serviceBase = imageUriBase
-	profileLevel = "http://library.stanford.edu/iiif/image-api/1.1/conformance.html#level1"
+def main(data, document_id, source):
+	dom = etree.XML(data)
 
 	manifestLabel = dom.xpath('/mods:mods/mods:titleInfo/mods:title/text()', namespaces=ALLNS)[0]
 	type = dom.xpath('/mods:mods/mods:typeOfResource/text()', namespaces=ALLNS)[0]
@@ -27,8 +28,9 @@ def main(data, outputIdentifier):
 	else:
 		# XXX Put in other mappings here
 		viewingHint = "individuals"
+	## TODO: add viewingDirection
 
-	manifestUriBase += "%s/" % (outputIdentifier)
+	manifest_uri = manifestUriBase + "%s:%s" % (source, document_id)
 
 	## List of different image labels
 	## @displayLabel = Full Image, @note = Color digital image available, @note = Harvard Map Collection copy image
@@ -58,14 +60,14 @@ def main(data, outputIdentifier):
 
 	mfjson = {
 		"@context":"http://www.shared-canvas.org/ns/context.json",
-		"@id": manifestUriBase + "manifest.json",
+		"@id": manifest_uri,
 		"@type":"sc:Manifest",
 		"label":manifestLabel,
-		"attribution":"Provided by Harvard University",
+		"attribution":attribution,
 		"viewingHint":viewingHint,
 		"sequences": [
 			{
-				"@id": manifestUriBase + "sequence/normal.json",
+				"@id": manifest_uri + "/sequence/normal.json",
 				"@type": "sc:Sequence",
 			}
 		]
@@ -75,12 +77,12 @@ def main(data, outputIdentifier):
 
 	for cvs in canvasInfo:
 		cvsjson = {
-			"@id": manifestUriBase + "canvas/canvas-%s.json" % cvs['image'],
+			"@id": manifest_uri + "/canvas/canvas-%s.json" % cvs['image'],
 			"@type": "sc:Canvas",
 			"label": cvs['label'],
 			"resources": [
 				{
-					"@id":manifestUriBase+"annotation/anno-%s.json" % cvs['image'],
+					"@id":manifest_uri+"/annotation/anno-%s.json" % cvs['image'],
 					"@type": "oa:Annotation",
 					"motivation": "sc:painting",
 					"resource": {
@@ -92,7 +94,7 @@ def main(data, outputIdentifier):
 						  "profile": profileLevel
 						},
 					},
-					"on": manifestUriBase + "canvas/canvas-%s.json" % cvs['image']
+					"on": manifest_uri + "/canvas/canvas-%s.json" % cvs['image']
 				}
 			]
 		}
@@ -103,21 +105,22 @@ def main(data, outputIdentifier):
 	return output
 
 if __name__ == "__main__":
-	if (len(sys.argv) < 3):
+	if (len(sys.argv) < 4):
 		sys.stderr.write('not enough args\n')
-		sys.stderr.write('usage: mods.py input manifest_identifier\n')
+		sys.stderr.write('usage: mods.py input manifest_identifier source\n')
 		sys.exit(0)
 
 	inputfile = sys.argv[1]
-	outputIdentifier = sys.argv[2]
-	outputfile = outputIdentifier +  ".json"
+	document_id = sys.argv[2]
+	source = sys.argv[4]
+	outputfile = source + '-' + document_id +  ".json"
 	isDrs1 = True; # add functionality for drs2
 
 	fh = file(inputfile)
 	data = fh.read()
 	fh.close()
 
-	output = main(data, outputIdentifier)
+	output = main(data, document_id, source)
 	fh = file(outputfile, 'w')
 	fh.write(output)
 	fh.close()

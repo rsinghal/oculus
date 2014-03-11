@@ -85,6 +85,20 @@ def refresh(request, document_id):
     else:
         return response_doc # This is actually the 404 HttpResponse, so return and end the function
 
+# Force refresh all records from a single source
+# WARNING: this could take a long time
+# Pull METS or MODS, rerun conversion script, and store in db
+def refresh_by_source(request, source):
+    document_ids = models.get_all_manifest_ids_with_type(source)
+    counter = 0
+    for id in document_ids:
+        (success, response_doc, real_id, real_source) = get_manifest(id, source, True)
+        if success:
+            counter = counter + 1
+
+    response = HttpResponse("Refreshed %s out of %s total documents in %s" % (counter, len(document_ids), source))
+    return response
+
 # this is a hack because the javascript uses relative paths for the PNG files, and Django creates the incorrect URL for them
 # Need to find a better and more permanent solution
 def get_image(request, filename):
@@ -165,7 +179,7 @@ def get_manifest(document_id, source, force_refresh):
  
         # Convert to shared canvas model if successful
         if xml_type == "mods":
-            converted_json = mods.main(response, document_id)
+            converted_json = mods.main(response, document_id, source)
             # check if this is, in fact, a PDS object masked as a hollis request
             # If so, get the manifest with the DRS METS ID and return that
             json_doc = json.loads(converted_json)
@@ -173,7 +187,7 @@ def get_manifest(document_id, source, force_refresh):
                 id = json_doc['pds']
                 return get_manifest(id, 'drs', False)
         elif xml_type == "mets":
-            converted_json = mets.main(response, document_id)
+            converted_json = mets.main(response, document_id, source)
         else:
             pass
         # Store to elasticsearch
