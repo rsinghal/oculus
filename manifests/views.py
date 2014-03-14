@@ -15,7 +15,7 @@ MODS_DRS_URL = "http://webservices.lib.harvard.edu/rest/MODS/"
 sources = {"drs": "mets", "via": "mods", "hollis": "mods"}
 
 # view any number of MODS or METS objects
-def view(request, document_id):
+def view(request, view_type, document_id):
     doc_ids = document_id.split(';')
     manifests = {}
     for doc_id in doc_ids:
