@@ -32,7 +32,11 @@ def view(request, document_id):
             manifests[uri] = title
 
     if len(manifests) > 0:
-        return render(request, 'manifests/manifest.html', {'manifests' : manifests})
+        if (view_type == "view"):
+            return render(request, 'manifests/manifest.html', {'manifests' : manifests})
+        else:
+            #uses EXPERIMENTAL Mirador
+            return render(request, 'manifests/dev.html', {'manifests' : manifests})
     else:
         return HttpResponse("The requested document ID(s) %s could not be displayed" % document_id, status=404) # 404 HttpResponse object
 
@@ -101,8 +105,11 @@ def refresh_by_source(request, source):
 
 # this is a hack because the javascript uses relative paths for the PNG files, and Django creates the incorrect URL for them
 # Need to find a better and more permanent solution
-def get_image(request, filename):
-    return HttpResponseRedirect("/static/manifests/images/openseadragon/%s" % filename)
+def get_image(request, view_type, filename):
+    if view_type == "view":
+        return HttpResponseRedirect("/static/manifests/prod/images/openseadragon/%s" % filename)
+    else:
+        return HttpResponseRedirect("/static/manifests/dev/images/openseadragon/%s" % filename)
 
 ## HELPER FUNCTIONS ##
 # Gets METS XML from DRS
