@@ -2,6 +2,7 @@
 
 from lxml import etree
 import json, sys
+import urllib2
 
 metsNS = 'http://www.loc.gov/METS/'
 modsNS = 'http://www.loc.gov/mods/v3'
@@ -18,19 +19,22 @@ serviceBase = imageUriBase
 profileLevel = "http://library.stanford.edu/iiif/image-api/1.1/conformance.html#level1"
 attribution = "Provided by Harvard University"
 
+HOLLIS_URL = "http://webservices.lib.harvard.edu/rest/MODS/hollis/"
+ ## Add ISO639-2B language codes here where books are printed right-to-left (not just the language is read that way)
+right_to_left_langs = set(['ara','heb'])
+
 def process_struct_map(st, canvasInfo):
-	info = {}
 	if 'LABEL' in st.attrib:
-		info['label'] = st.xpath('./@LABEL')[0]
+		label = st.xpath('./@LABEL')[0]
 	else:
-		info['label'] = st.xpath('./@ORDER')[0]
+		label = st.xpath('./@ORDER')[0]
 
 	for fid in st.xpath('.//mets:fptr/@FILEID', namespaces=ALLNS):
+		info = {}
+		info['label'] = label
 		if fid in imageHash.keys():
 			info['image'] = imageHash[fid]
-			break
-	if 'image' in info:
-		canvasInfo.append(info)
+			canvasInfo.append(info)
 
 def main(data, document_id, source):
 	dom = etree.XML(data)
@@ -43,7 +47,17 @@ def main(data, document_id, source):
 	else:
 		# XXX Put in other mappings here
 		viewingHint = "individuals"
-	## TODO: add viewingDirection
+
+	## get language(s) from HOLLIS record (because METS doesn't have it) to determine viewing direction
+	## TODO: top to bottom and bottom to top viewing directions
+	viewingDirection = 'left-to-right' # default
+	hollisID = dom.xpath('/mets:mets/mets:dmdSec/mets:mdWrap/mets:xmlData/mods:mods/mods:identifier[@type="hollis"]/text()', namespaces=ALLNS)[0]
+	response = urllib2.urlopen(HOLLIS_URL+hollisID).read()
+	mods_dom = etree.XML(response)
+	hollis_langs = set(mods_dom.xpath('/mods:mods/mods:language/mods:languageTerm/text()', namespaces=ALLNS))
+	# intersect both sets and determine if there are common elements
+	if len(hollis_langs & right_to_left_langs) > 0:
+		viewingDirection = 'right-to-left'
 
 	manifest_uri = manifestUriBase + "%s:%s" % (source, document_id)
 
@@ -87,6 +101,7 @@ def main(data, document_id, source):
 		"label":manifestLabel,
 		"attribution":attribution,
 		"viewingHint":viewingHint,
+		"viewingDirection":viewingDirection,
 		"sequences": [
 			{
 				"@id": manifest_uri + "/sequence/normal.json",
