@@ -20,7 +20,9 @@
 
       Mirador({
         "id": "viewer",
-    "workspaceAutoSave": false,
+        "workspaceAutoSave": false,
+        "hideOSDFullScreen":false,
+        "showThumbnailNavigator": true,
         "data": [
     {% for uri, title in manifests.items %}
     { "manifestUri": "{{ uri }}", "location": "Harvard University", "title": "{{ title }}", "widgets": [{
