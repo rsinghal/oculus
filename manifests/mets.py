@@ -7,8 +7,10 @@ import urllib2
 metsNS = 'http://www.loc.gov/METS/'
 modsNS = 'http://www.loc.gov/mods/v3'
 xlinkNS = 'http://www.w3.org/1999/xlink'
+premisNS ="info:lc/xmlns/premis-v2"
+hulDrsAdminNS ="http://hul.harvard.edu/ois/xml/ns/hulDrsAdmin"
 
-ALLNS = {'mets':metsNS, 'mods':modsNS, 'xlink':xlinkNS}
+ALLNS = {'mets':metsNS, 'mods':modsNS, 'xlink':xlinkNS, 'premis':premisNS, 'hulDrsAdmin':hulDrsAdminNS}
 imageHash = {}
 
 ## TODO: Other image servers?
@@ -38,6 +40,11 @@ def process_struct_map(st, canvasInfo):
 
 def main(data, document_id, source):
 	dom = etree.XML(data)
+	# Check if this is a DRS2 object since some things, like hollis ID are in a different location
+	isDrs1 = True; 
+	drs_check = dom.xpath('/mets:mets//premis:agentName/text()', namespaces=ALLNS)
+	if len(drs_check) > 0 and 'DRS2' in '\t'.join(drs_check):
+		isDrs1 = False
 
 	manifestLabel = dom.xpath('/mets:mets/@LABEL', namespaces=ALLNS)[0]
 	manifestType = dom.xpath('/mets:mets/@TYPE', namespaces=ALLNS)[0]
@@ -51,7 +58,10 @@ def main(data, document_id, source):
 	## get language(s) from HOLLIS record (because METS doesn't have it) to determine viewing direction
 	## TODO: top to bottom and bottom to top viewing directions
 	viewingDirection = 'left-to-right' # default
-	hollisID = dom.xpath('/mets:mets/mets:dmdSec/mets:mdWrap/mets:xmlData/mods:mods/mods:identifier[@type="hollis"]/text()', namespaces=ALLNS)[0]
+	if isDrs1:
+		hollisID = dom.xpath('/mets:mets/mets:dmdSec/mets:mdWrap/mets:xmlData/mods:mods/mods:identifier[@type="hollis"]/text()', namespaces=ALLNS)[0]
+	else:
+		hollisID = dom.xpath('/mets:mets/mets:amdSec//hulDrsAdmin:hulDrsAdmin/hulDrsAdmin:drsObject/hulDrsAdmin:harvardMetadataLinks/hulDrsAdmin:metadataIdentifier/text()', namespaces=ALLNS)[0].strip()
 	response = urllib2.urlopen(HOLLIS_URL+hollisID).read()
 	mods_dom = etree.XML(response)
 	hollis_langs = set(mods_dom.xpath('/mods:mods/mods:language/mods:languageTerm/text()', namespaces=ALLNS))
@@ -174,7 +184,6 @@ if __name__ == "__main__":
 	document_id = sys.argv[2]
 	source = sys.argv[3]
 	outputfile = source + '-' + document_id +  ".json"
-	isDrs1 = True; # add functionality for drs2
 
 	fh = file(inputfile)
 	data = fh.read()
