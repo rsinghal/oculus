@@ -2732,6 +2732,8 @@ window.Mirador = window.Mirador || function(config) {
 
     'showThumbnailNavigator': false,
 
+    'stitchTileMargin': 0,
+
     'availableViews': {
       'imageView': {
         'label': 'Image View'
@@ -3330,6 +3332,7 @@ jQuery.fn.scrollStop = function(callback) {
       resizeRatio:            {},
       hideOSDFullScreen:      $.DEFAULT_SETTINGS.hideOSDFullScreen,
       showThumbnailNavigator: $.DEFAULT_SETTINGS.showThumbnailNavigator,
+      stitchTileMargin:       $.DEFAULT_SETTINGS.stitchTileMargin,
 
       lastWidgetPosition: {
         x: 'left',
@@ -6172,7 +6175,8 @@ jQuery.fn.scrollStop = function(callback) {
       selectedChoice:   '',
       statusbarCls:     'mirador-image-view-statusbar',
       imageViewBgCls:   'mirador-image-view-bg',
-      hideOSDFullScreen: $.viewer.hideOSDFullScreen
+      hideOSDFullScreen: $.viewer.hideOSDFullScreen,
+      stitchTileMargin: $.viewer.stitchTileMargin
     }, options);
 
 
@@ -6237,7 +6241,7 @@ jQuery.fn.scrollStop = function(callback) {
         'tileSources':  tileSources,
 	'collectionMode':     'true',
 	'collectionRows':     1, //depends on viewing direction
-	'collectionTileMargin': 10,
+	'collectionTileMargin': this.stitchTileMargin,
 	'collectionTileSize': 1600
       });
 
