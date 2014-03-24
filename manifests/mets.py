@@ -49,7 +49,7 @@ def main(data, document_id, source):
 	manifestLabel = dom.xpath('/mets:mets/@LABEL', namespaces=ALLNS)[0]
 	manifestType = dom.xpath('/mets:mets/@TYPE', namespaces=ALLNS)[0]
 
-	if manifestType == "PAGEDOBJECT":
+	if manifestType in ["PAGEDOBJECT", "PDS DOCUMENT"]:
 		viewingHint = "paged"
 	else:
 		# XXX Put in other mappings here

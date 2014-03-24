@@ -2739,7 +2739,7 @@ window.Mirador = window.Mirador || function(config) {
         'label': 'Image View'
       },
       'stitchView': {
-        'label': 'Stich View'
+        'label': 'Stitch View'
       },
       'scrollView': {
         'label': 'Scroll View'
