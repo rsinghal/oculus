@@ -55,19 +55,21 @@ def main(data, document_id, source):
 		# XXX Put in other mappings here
 		viewingHint = "individuals"
 
-	## get language(s) from HOLLIS record (because METS doesn't have it) to determine viewing direction
+	## get language(s) from HOLLIS record, if there is one, (because METS doesn't have it) to determine viewing direction
 	## TODO: top to bottom and bottom to top viewing directions
 	viewingDirection = 'left-to-right' # default
 	if isDrs1:
-		hollisID = dom.xpath('/mets:mets/mets:dmdSec/mets:mdWrap/mets:xmlData/mods:mods/mods:identifier[@type="hollis"]/text()', namespaces=ALLNS)[0]
+		hollisCheck = dom.xpath('/mets:mets/mets:dmdSec/mets:mdWrap/mets:xmlData/mods:mods/mods:identifier[@type="hollis"]/text()', namespaces=ALLNS)
 	else:
-		hollisID = dom.xpath('/mets:mets/mets:amdSec//hulDrsAdmin:hulDrsAdmin/hulDrsAdmin:drsObject/hulDrsAdmin:harvardMetadataLinks/hulDrsAdmin:metadataIdentifier/text()', namespaces=ALLNS)[0].strip()
-	response = urllib2.urlopen(HOLLIS_URL+hollisID).read()
-	mods_dom = etree.XML(response)
-	hollis_langs = set(mods_dom.xpath('/mods:mods/mods:language/mods:languageTerm/text()', namespaces=ALLNS))
-	# intersect both sets and determine if there are common elements
-	if len(hollis_langs & right_to_left_langs) > 0:
-		viewingDirection = 'right-to-left'
+		hollisCheck = dom.xpath('/mets:mets/mets:amdSec//hulDrsAdmin:hulDrsAdmin/hulDrsAdmin:drsObject/hulDrsAdmin:harvardMetadataLinks/hulDrsAdmin:metadataIdentifier[../hulDrsAdmin:metadataType/text()="Aleph"]/text()', namespaces=ALLNS)
+	if len(hollisCheck) > 0:
+		hollisID = hollisCheck[0].strip()
+		response = urllib2.urlopen(HOLLIS_URL+hollisID).read()
+		mods_dom = etree.XML(response)
+		hollis_langs = set(mods_dom.xpath('/mods:mods/mods:language/mods:languageTerm/text()', namespaces=ALLNS))
+		# intersect both sets and determine if there are common elements
+		if len(hollis_langs & right_to_left_langs) > 0:
+			viewingDirection = 'right-to-left'
 
 	manifest_uri = manifestUriBase + "%s:%s" % (source, document_id)
 
