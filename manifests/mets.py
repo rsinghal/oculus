@@ -30,53 +30,48 @@ HOLLIS_PUBLIC_URL = "http://hollisclassic.harvard.edu/F?func=find-c&CCL_TERM=sys
  ## Add ISO639-2B language codes here where books are printed right-to-left (not just the language is read that way)
 right_to_left_langs = set(['ara','heb'])
 
+def process_page(sd, rangeKey, new_ranges):
+	# first check if PAGE has label, otherwise get parents LABEL/ORDER				
+	if 'LABEL' in sd.attrib:
+		label = sd.get('LABEL')
+	else:
+		label = rangeKey
+	for fid in sd.xpath('./mets:fptr/@FILEID', namespaces=ALLNS):
+		if fid in imageHash.keys():
+			info = {}
+			info['label'] = label
+			info['image'] = imageHash[fid]
+			canvasInfo.append(info)
+			if label != rangeKey:
+				range = {}
+				range[label] = imageHash[fid]
+				new_ranges.append(range)
+			else:
+				new_ranges.append(imageHash[fid])				
+
 def process_struct_map(div, ranges):
 	if 'LABEL' in div.attrib:
 		rangeKey = div.get('LABEL')
 	else:
 		rangeKey = div.get('ORDER')
+
+	# when the top level divs are PAGEs
+	if 'TYPE' in div.attrib and div.get("TYPE") == 'PAGE':
+		new_ranges = []
+		process_page(div, rangeKey, new_ranges)
+		ranges.append({rangeKey : new_ranges})
+
 	subdivs = div.xpath('./mets:div', namespaces = ALLNS)	
 	if len(subdivs) > 0:
 		new_ranges = []
 		for sd in subdivs:
+			#print etree.tostring(sd)
 			# leaf node, get canvas info
 			if 'TYPE' in sd.attrib and sd.get("TYPE") == 'PAGE':
-				# first check if PAGE has label, otherwise get parents LABEL/ORDER				
-				if 'LABEL' in sd.attrib:
-					label = sd.get('LABEL')
-				else:
-					label = rangeKey
-				for fid in sd.xpath('./mets:fptr/@FILEID', namespaces=ALLNS):
-					if fid in imageHash.keys():
-						info = {}
-						info['label'] = label
-						info['image'] = imageHash[fid]
-						canvasInfo.append(info)
-						if label != rangeKey:
-							range = {}
-							range[label] = imageHash[fid]
-							new_ranges.append(range)
-						else:
-							new_ranges.append(imageHash[fid])				
+				process_page(sd, rangeKey, new_ranges)
 			else:
 				new_ranges.extend(process_struct_map(sd, []))
 		ranges.append({rangeKey : new_ranges})
-	return ranges
-
-def process_struct_div(st, canvasInfo, ranges):
-	if 'LABEL' in st.attrib:
-		label = st.xpath('./@LABEL')[0]
-	else:
-		label = st.xpath('./@ORDER')[0]
-	for fid in st.xpath('.//mets:fptr/@FILEID', namespaces=ALLNS):
-		info = {}
-		info['label'] = label
-		if fid in imageHash.keys():
-			info['image'] = imageHash[fid]
-			canvasInfo.append(info)
-			range = {}
-			range[label] = imageHash[fid]
-			ranges.append(range)
 	return ranges
 
 def create_range_json(ranges, manifest_uri, range_id, within, label):
