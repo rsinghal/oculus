@@ -13,9 +13,7 @@ hulDrsAdminNS ="http://hul.harvard.edu/ois/xml/ns/hulDrsAdmin"
 ALLNS = {'mets':metsNS, 'mods':modsNS, 'xlink':xlinkNS, 'premis':premisNS, 'hulDrsAdmin':hulDrsAdminNS}
 imageHash = {}
 canvasInfo = []
-rangeInfo = []
 rangesJsonList = []
-rangesJsonList2 = []
 
 ## TODO: Other image servers?
 imageUriBase = "http://ids.lib.harvard.edu/ids/iiif/"
@@ -42,12 +40,9 @@ def process_page(sd, rangeKey, new_ranges):
 			info['label'] = label
 			info['image'] = imageHash[fid]
 			canvasInfo.append(info)
-			if label != rangeKey:
-				range = {}
-				range[label] = imageHash[fid]
-				new_ranges.append(range)
-			else:
-				new_ranges.append(imageHash[fid])				
+			range = {}
+			range[label] = imageHash[fid]
+			new_ranges.append(range)
 
 def process_struct_map(div, ranges):
 	if 'LABEL' in div.attrib:
@@ -59,32 +54,50 @@ def process_struct_map(div, ranges):
 	if 'TYPE' in div.attrib and div.get("TYPE") == 'PAGE':
 		new_ranges = []
 		process_page(div, rangeKey, new_ranges)
+		if len(new_ranges) == 1:
+			range_dict = new_ranges[0]			
+			new_ranges = range_dict.get(range_dict.keys()[0])
 		ranges.append({rangeKey : new_ranges})
 
 	subdivs = div.xpath('./mets:div', namespaces = ALLNS)	
 	if len(subdivs) > 0:
 		new_ranges = []
 		for sd in subdivs:
-			#print etree.tostring(sd)
 			# leaf node, get canvas info
 			if 'TYPE' in sd.attrib and sd.get("TYPE") == 'PAGE':
 				process_page(sd, rangeKey, new_ranges)
 			else:
 				new_ranges.extend(process_struct_map(sd, []))
+		# this is for the books where every single page is labeled (like Book of Hours)
+		# most books do not do this
+		if len(new_ranges) == 1:
+			range_dict = new_ranges[0]			
+			new_ranges = range_dict.get(range_dict.keys()[0])
 		ranges.append({rangeKey : new_ranges})
 	return ranges
+	
+def get_leaf_canvases(ranges, leaf_canvases):
+	for range in ranges:
+		if type(range) is dict:
+			value = range.get(range.keys()[0])
+		else:
+			value = range
+		#if type(value) is list:
+		if any(isinstance(x, dict) for x in value):
+			get_leaf_canvases(value, leaf_canvases)
+		else:
+			leaf_canvases.append(value)
 
 def create_range_json(ranges, manifest_uri, range_id, within, label):
 	# this is either a nested list of dicts or one or more image ids in the METS
 	if any(isinstance(x, dict) for x in ranges):
+		leaf_canvases = []
+		get_leaf_canvases(ranges, leaf_canvases)
 		canvases = []
+		for lc in leaf_canvases:
+			canvases.append(manifest_uri + "/canvas/canvas-%s.json" % lc)
 	else:
-		canvases = []
-		if type(ranges) is list:
-			for range in ranges:
-				canvases.append(manifest_uri + "/canvas/canvas-%s.json" % range)
-		else:
-			canvases.append(manifest_uri + "/canvas/canvas-%s.json" % ranges)
+		canvases = [manifest_uri + "/canvas/canvas-%s.json" % ranges]
 
 	rangejson =  {"@id": range_id,
 		      "@type": "sc:Range",
@@ -113,52 +126,6 @@ def create_ranges(ranges, previous_id, manifest_uri):
 		new_ranges = ri.get(label)
 		create_range_json(new_ranges, manifest_uri, range_id, previous_id, label)
 		create_ranges(new_ranges, range_id, manifest_uri)
-	
-def get_leaf_canvases2(ranges, leaf_canvases):
-	for range in ranges:
-		value = range.get(range.keys()[0])
-		if type(value) is list:
-			get_leaf_canvases2(value, leaf_canvases)
-		else:
-			leaf_canvases.append(value)
-
-def create_range_json2(ranges, manifest_uri, range_id, within, label):
-	# this is either a list or the image id in the METS
-	if type(ranges) is list:
-		leaf_canvases = []
-		get_leaf_canvases2(ranges, leaf_canvases)
-		canvases = []
-		for lc in leaf_canvases:
-			canvases.append(manifest_uri + "/canvas/canvas-%s.json" % lc)
-	else:
-		canvases = [manifest_uri + "/canvas/canvas-%s.json" % ranges]
-
-	rangejson =  {"@id": range_id,
-		      "@type": "sc:Range",
-		      "label": label,
-		      "canvases": canvases
-		      }
-	# top level "within" equals the manifest_uri, so this range is a top level
-	if within != manifest_uri:
-		rangejson["within"] = within
-	rangesJsonList2.append(rangejson)
-
-def create_ranges2(ranges, previous_id, manifest_uri):
-	if not type(ranges) is list:
-		return
-	counter = 0
-	for ri in ranges:
-		counter = counter + 1
-		label = ri.keys()[0]
-		if previous_id == manifest_uri:
-			# these are for the top level divs
-			range_id = manifest_uri + "/range/range-%s.json" % counter
-		else:
-			# otherwise, append the counter to the parent's id
-			range_id = previous_id[0:previous_id.rfind('.json')] + "-%s.json" % counter
-		new_ranges = ri.get(label)
-		create_range_json2(new_ranges, manifest_uri, range_id, previous_id, label)
-		create_ranges2(new_ranges, range_id, manifest_uri)
 	
 def main(data, document_id, source):
 	dom = etree.XML(data)
@@ -213,10 +180,12 @@ def main(data, document_id, source):
 	for img in images:
 		imageHash[img.xpath('./@ID', namespaces=ALLNS)[0]] = img.xpath('./mets:FLocat/@xlink:href', namespaces = ALLNS)[0]
 
+	rangeList = []
 	for st in struct:
 		ranges = process_struct_map(st, [])
-		rangeInfo.extend(ranges)
-
+		rangeList.extend(ranges)
+	rangeInfo = [{"Table of Contents" : rangeList}]
+	print rangeInfo
 	mfjson = {
 		"@context":"http://www.shared-canvas.org/ns/context.json",
 		"@id": manifest_uri,
@@ -265,7 +234,6 @@ def main(data, document_id, source):
 
 	# build table of contents using Range and Structures
 	create_ranges(rangeInfo, manifest_uri, manifest_uri)
-	#create_ranges2(rangeInfo, manifest_uri, manifest_uri)
 
 	mfjson['sequences'][0]['canvases'] = canvases
 	mfjson['structures'] = rangesJsonList
