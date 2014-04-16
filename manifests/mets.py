@@ -128,6 +128,10 @@ def create_ranges(ranges, previous_id, manifest_uri):
 		create_ranges(new_ranges, range_id, manifest_uri)
 	
 def main(data, document_id, source):
+	# clear global variables
+	imageHash = {}
+	canvasInfo = []
+	rangesJsonList = []
 	dom = etree.XML(data)
 	# Check if this is a DRS2 object since some things, like hollis ID are in a different location
 	isDrs1 = True; 
