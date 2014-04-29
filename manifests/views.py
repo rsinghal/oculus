@@ -32,11 +32,13 @@ def view(request, view_type, document_id):
             manifests[uri] = title
 
     if len(manifests) > 0:
-        if (view_type == "view"):
-            return render(request, 'manifests/manifest.html', {'manifests' : manifests})
-        else:
-            #uses EXPERIMENTAL Mirador
+        # Check if its an experimental/dev Mirador codebase, otherwise use production
+        if (view_type == "view-dev"):
             return render(request, 'manifests/dev.html', {'manifests' : manifests})
+        elif (view_type == "view-annotator"):
+            return render(request, 'manifests/annotator.html', {'manifests' : manifests})
+        else:
+            return render(request, 'manifests/manifest.html', {'manifests' : manifests})
     else:
         return HttpResponse("The requested document ID(s) %s could not be displayed" % document_id, status=404) # 404 HttpResponse object
 
@@ -106,10 +108,16 @@ def refresh_by_source(request, source):
 # this is a hack because the javascript uses relative paths for the PNG files, and Django creates the incorrect URL for them
 # Need to find a better and more permanent solution
 def get_image(request, view_type, filename):
-    if view_type == "view":
-        return HttpResponseRedirect("/static/manifests/prod/images/openseadragon/%s" % filename)
-    else:
+    if view_type == "view-dev":
         return HttpResponseRedirect("/static/manifests/dev/images/openseadragon/%s" % filename)
+    elif view_type == "view-annotator":
+        return HttpResponseRedirect("/static/manifests/annotator/images/openseadragon/%s" % filename)
+    else:
+        return HttpResponseRedirect("/static/manifests/prod/images/openseadragon/%s" % filename)
+
+def clean_url(request, view_type):
+    cleaned = "/static" + request.path.replace("//","/").replace("view-","")
+    return HttpResponseRedirect(cleaned)
 
 ## HELPER FUNCTIONS ##
 # Gets METS XML from DRS
