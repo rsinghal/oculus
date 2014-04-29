@@ -15,5 +15,5 @@ urlpatterns = patterns('',
     # probably won't find a better solution for images because won't actually serve 
     # HTML pages with mirador out of django (it's just for testing/demo purposes)
     url(r'^(?P<view_type>view(-dev|-annotator)?)/images/openseadragon/(?P<filename>.*)$', views.get_image), 
-    url(r'^(?P<view_type>view(-dev|-annotator)?)//.*$', views.clean_url), 
+    url(r'^(?P<view_type>view(-dev|-annotator)?)/+.*skins.*$', views.clean_url), 
 )
