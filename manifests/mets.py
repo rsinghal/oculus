@@ -233,6 +233,8 @@ def main(data, document_id, source):
 						"@id": imageUriBase + cvs['image'] + imageUriSuffix,
 						"@type": "dcterms:Image",
 						"format":"image/jpeg",
+						"height": infojson['height'],
+						"width": infojson['width'],
 						"service": { 
 						  "@id": imageUriBase + cvs['image'],
 						  "profile": profileLevel
