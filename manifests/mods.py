@@ -11,6 +11,7 @@ imageHash = {}
 
 imageUriBase = "http://ids.lib.harvard.edu/ids/iiif/"
 imageUriSuffix = "/full/full/full/native"
+imageInfoSuffix = "/info.json"
 manifestUriBase = "http://oculus-dev.lib.harvard.edu/manifests/"
 serviceBase = imageUriBase
 profileLevel = "http://library.stanford.edu/iiif/image-api/1.1/conformance.html#level1"
@@ -76,11 +77,15 @@ def main(data, document_id, source):
 	canvases = []
 
 	for cvs in canvasInfo:
+		response = urllib2.urlopen(imageUriBase + cvs['image'] + imageInfoSuffix)
+		infojson = json.load(response)
 		cvsjson = {
 			"@id": manifest_uri + "/canvas/canvas-%s.json" % cvs['image'],
 			"@type": "sc:Canvas",
 			"label": cvs['label'],
-			"resources": [
+			"height": infojson['height'],
+			"width": infojson['width'],
+			"images": [
 				{
 					"@id":manifest_uri+"/annotation/anno-%s.json" % cvs['image'],
 					"@type": "oa:Annotation",
