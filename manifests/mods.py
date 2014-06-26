@@ -65,11 +65,11 @@ def main(data, document_id, source):
 		"@type":"sc:Manifest",
 		"label":manifestLabel,
 		"attribution":attribution,
-		"viewingHint":viewingHint,
 		"sequences": [
 			{
 				"@id": manifest_uri + "/sequence/normal.json",
 				"@type": "sc:Sequence",
+				"viewingHint":viewingHint,
 			}
 		]
 	}
