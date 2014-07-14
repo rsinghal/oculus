@@ -168,8 +168,9 @@ def main(data, document_id, source):
 		mods_dom = etree.XML(response)
 		hollis_langs = set(mods_dom.xpath('/mods:mods/mods:language/mods:languageTerm/text()', namespaces=ALLNS))
 		citeAs = mods_dom.xpath('/mods:mods/mods:note[@type="preferred citation"]/text()', namespaces=ALLNS)
+		titleInfo = mods_dom.xpath('/mods:mods/mods:titleInfo/mods:title/text()', namespaces=ALLNS)[0]
 		if len(citeAs) > 0:
-			manifestLabel = citeAs[0]
+			manifestLabel = citeAs[0] + " " + titleInfo
 		# intersect both sets and determine if there are common elements
 		if len(hollis_langs & right_to_left_langs) > 0:
 			viewingDirection = 'right-to-left'
