@@ -159,7 +159,6 @@ def main(data, document_id, source):
 	seeAlso = ""
 	if isDrs1:
 		hollisCheck = dom.xpath('/mets:mets/mets:dmdSec/mets:mdWrap/mets:xmlData/mods:mods/mods:identifier[@type="hollis"]/text()', namespaces=ALLNS)
-		hollisCheck = []
 	else:
 		hollisCheck = dom.xpath('/mets:mets/mets:amdSec//hulDrsAdmin:hulDrsAdmin/hulDrsAdmin:drsObject/hulDrsAdmin:harvardMetadataLinks/hulDrsAdmin:metadataIdentifier[../hulDrsAdmin:metadataType/text()="Aleph"]/text()', namespaces=ALLNS)
 	if len(hollisCheck) > 0:
@@ -168,6 +167,9 @@ def main(data, document_id, source):
 		response = urllib2.urlopen(HOLLIS_API_URL+hollisID).read()
 		mods_dom = etree.XML(response)
 		hollis_langs = set(mods_dom.xpath('/mods:mods/mods:language/mods:languageTerm/text()', namespaces=ALLNS))
+		citeAs = mods_dom.xpath('/mods:mods/mods:note[@type="preferred citation"]/text()', namespaces=ALLNS)
+		if len(citeAs) > 0:
+			manifestLabel = citeAs[0]
 		# intersect both sets and determine if there are common elements
 		if len(hollis_langs & right_to_left_langs) > 0:
 			viewingDirection = 'right-to-left'
