@@ -37,8 +37,8 @@ def view(request, view_type, document_id):
             return render(request, 'manifests/dev.html', {'manifests' : manifests})
         elif (view_type == "view-annotator"):
             return render(request, 'manifests/annotator.html', {'manifests' : manifests})
-        elif (view_type == "view-m2"):
-            return render(request, 'manifests/m2.html', {'manifests' : manifests})
+        elif (view_type == "view-m1"):
+            return render(request, 'manifests/m1.html', {'manifests' : manifests})
         else:
             return render(request, 'manifests/manifest.html', {'manifests' : manifests})
     else:
@@ -114,8 +114,8 @@ def get_image(request, view_type, filename):
         return HttpResponseRedirect("/static/manifests/dev/images/%s" % filename)
     elif view_type == "view-annotator":
         return HttpResponseRedirect("/static/manifests/annotator/images/%s" % filename)
-    elif view_type == "view-m2":
-        return HttpResponseRedirect("/static/manifests/m2/images/%s" % filename)
+    elif view_type == "view-m1":
+        return HttpResponseRedirect("/static/manifests/m1/images/%s" % filename)
     else:
         return HttpResponseRedirect("/static/manifests/prod/images/%s" % filename)
 
