@@ -28,7 +28,7 @@ def view(request, view_type, document_id):
         (success, response, real_id, real_source) = get_manifest(id, source, False)
         if success:
             title = models.get_manifest_title(real_id, real_source)
-            uri = request.META['HTTP_HOST'] + "/manifests/"+real_source+":"+real_id
+            uri = "http://%s/manifests/%s:%s" % (request.META['HTTP_HOST'],real_source,real_id)
             manifests[uri] = title
 
     if len(manifests) > 0:
