@@ -12,12 +12,17 @@ imageHash = {}
 imageUriBase = "http://ids.lib.harvard.edu/ids/iiif/"
 imageUriSuffix = "/full/full/full/native"
 imageInfoSuffix = "/info.json"
-manifestUriBase = "http://oculus-dev.lib.harvard.edu/manifests/"
+manifestUriBase = ""
 serviceBase = imageUriBase
 profileLevel = "http://library.stanford.edu/iiif/image-api/1.1/conformance.html#level1"
 attribution = "Provided by Harvard University"
 
-def main(data, document_id, source):
+def main(data, document_id, source, host):
+	global imageHash 
+	imageHash = {}
+	global manifestUriBase
+	manifestUriBase = "http://%s/manifests/" % host
+
 	dom = etree.XML(data)
 
 	manifestLabel = dom.xpath('/mods:mods/mods:titleInfo/mods:title/text()', namespaces=ALLNS)[0]

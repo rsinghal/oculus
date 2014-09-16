@@ -18,6 +18,7 @@ sources = {"drs": "mets", "via": "mods", "hollis": "mods"}
 def view(request, view_type, document_id):
     doc_ids = document_id.split(';')
     manifests = {}
+    host = request.META['HTTP_HOST']
     for doc_id in doc_ids:
         parts = doc_id.split(':')
         if len(parts) != 2:
@@ -25,10 +26,10 @@ def view(request, view_type, document_id):
         source = parts[0]
         id = parts[1]
         #print source, id
-        (success, response, real_id, real_source) = get_manifest(id, source, False)
+        (success, response, real_id, real_source) = get_manifest(id, source, False, host)
         if success:
             title = models.get_manifest_title(real_id, real_source)
-            uri = "http://%s/manifests/%s:%s" % (request.META['HTTP_HOST'],real_source,real_id)
+            uri = "http://%s/manifests/%s:%s" % (host,real_source,real_id)
             manifests[uri] = title
 
     if len(manifests) > 0:
@@ -48,11 +49,12 @@ def view(request, view_type, document_id):
 # Checks if DB has it, otherwise creates it
 def manifest(request, document_id):
     parts = document_id.split(":")
+    host = request.META['HTTP_HOST']
     if len(parts) != 2:
         return HttpResponse("Invalid document ID. Format: [data source]:[ID]", status=404)
     source = parts[0]
     id = parts[1]
-    (success, response_doc, real_id, real_source) = get_manifest(id, source, False)
+    (success, response_doc, real_id, real_source) = get_manifest(id, source, False, host)
     if success:
         response = HttpResponse(response_doc)
         add_headers(response)
@@ -80,11 +82,12 @@ def delete(request, document_id):
 # Pull METS or MODS, rerun conversion script, and store in db
 def refresh(request, document_id):
     parts = document_id.split(":")
+    host = request.META['HTTP_HOST']
     if len(parts) != 2:
         return HttpResponse("Invalid document ID. Format: [data source]:[ID]", status=404)
     source = parts[0]
     id = parts[1]
-    (success, response_doc, real_id, real_source) = get_manifest(id, source, True)
+    (success, response_doc, real_id, real_source) = get_manifest(id, source, True, host)
 
     if success:
         response = HttpResponse(response_doc)
@@ -99,8 +102,9 @@ def refresh(request, document_id):
 def refresh_by_source(request, source):
     document_ids = models.get_all_manifest_ids_with_type(source)
     counter = 0
+    host = request.META['HTTP_HOST']
     for id in document_ids:
-        (success, response_doc, real_id, real_source) = get_manifest(id, source, True)
+        (success, response_doc, real_id, real_source) = get_manifest(id, source, True,  host)
         if success:
             counter = counter + 1
 
@@ -170,7 +174,7 @@ def add_headers(response):
     return response
 
 # Uses other helper methods to create JSON
-def get_manifest(document_id, source, force_refresh):
+def get_manifest(document_id, source, force_refresh, host):
     # Check if manifest exists
     has_manifest = models.manifest_exists(document_id, source)
 
@@ -198,7 +202,7 @@ def get_manifest(document_id, source, force_refresh):
  
         # Convert to shared canvas model if successful
         if xml_type == "mods":
-            converted_json = mods.main(response, document_id, source)
+            converted_json = mods.main(response, document_id, source, host)
             # check if this is, in fact, a PDS object masked as a hollis request
             # If so, get the manifest with the DRS METS ID and return that
             json_doc = json.loads(converted_json)
@@ -206,7 +210,7 @@ def get_manifest(document_id, source, force_refresh):
                 id = json_doc['pds']
                 return get_manifest(id, 'drs', False)
         elif xml_type == "mets":
-            converted_json = mets.main(response, document_id, source)
+            converted_json = mets.main(response, document_id, source, host)
         else:
             pass
         # Store to elasticsearch
