@@ -117,22 +117,23 @@ def main(data, document_id, source, host):
 	return output
 
 if __name__ == "__main__":
-	if (len(sys.argv) < 4):
+	if (len(sys.argv) < 5):
 		sys.stderr.write('not enough args\n')
-		sys.stderr.write('usage: mods.py input manifest_identifier source\n')
+		sys.stderr.write('usage: mods.py [input] [manifest_identifier] [source] [host]\n')
 		sys.exit(0)
 
 	inputfile = sys.argv[1]
 	document_id = sys.argv[2]
-	source = sys.argv[4]
+	source = sys.argv[3]
 	outputfile = source + '-' + document_id +  ".json"
 	isDrs1 = True; # add functionality for drs2
+	host = sys.argv[4]
 
 	fh = file(inputfile)
 	data = fh.read()
 	fh.close()
 
-	output = main(data, document_id, source)
+	output = main(data, document_id, source, host)
 	fh = file(outputfile, 'w')
 	fh.write(output)
 	fh.close()
