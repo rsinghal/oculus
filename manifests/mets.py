@@ -40,7 +40,8 @@ def process_page(sd, rangeKey, new_ranges):
 			info = {}
 			info['label'] = label
 			info['image'] = imageHash[fid]
-			canvasInfo.append(info)
+			if info not in canvasInfo:
+				canvasInfo.append(info)
 			range = {}
 			range[label] = imageHash[fid]
 			new_ranges.append(range)
@@ -187,7 +188,6 @@ def main(data, document_id, source, host):
 	for st in struct:
 		stitchCheck = st.xpath('./@LABEL[contains(., "stitched")]', namespaces=ALLNS)
 		if stitchCheck:
-			#print(etree.tostring(st, pretty_print=True))
 			struct = st
 			break
 
