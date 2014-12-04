@@ -208,7 +208,7 @@ def get_manifest(document_id, source, force_refresh, host):
             json_doc = json.loads(converted_json)
             if 'pds' in json_doc:
                 id = json_doc['pds']
-                return get_manifest(id, 'drs', False)
+                return get_manifest(id, 'drs', False, host)
         elif xml_type == "mets":
             converted_json = mets.main(response, document_id, source, host)
         else:
