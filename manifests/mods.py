@@ -9,7 +9,7 @@ modsNS = 'http://www.loc.gov/mods/v3'
 ALLNS = {'mods':modsNS}
 imageHash = {}
 
-imageUriBase = "http://ids.lib.harvard.edu/ids/iiif/"
+imageUriBase = "https://images.harvardx.harvard.edu/ids/iiif/"
 imageUriSuffix = "/full/full/full/native"
 imageInfoSuffix = "/info.json"
 manifestUriBase = ""
@@ -21,7 +21,7 @@ def main(data, document_id, source, host):
 	global imageHash 
 	imageHash = {}
 	global manifestUriBase
-	manifestUriBase = "http://%s/manifests/" % host
+	manifestUriBase = "https://%s/manifests/" % host
 
 	dom = etree.XML(data)
 
