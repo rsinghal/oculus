@@ -18,7 +18,7 @@ def main(data, document_id, source, host):
 	global manifestUriBase
 	manifestUriBase = "http://%s/manifests/" % host
 
-	huam_json = json.load(data)
+	huam_json = json.loads(data)
 	attribution = huam_json["creditline"]
 
 	manifestLabel = huam_json["title"]
@@ -38,7 +38,7 @@ def main(data, document_id, source, host):
 	## @displayLabel = Full Image, @note = Color digital image available, @note = Harvard Map Collection copy image
 	images = huam_json["images"]
 
-	print "Images list", images
+	#print "Images list", images
 
 	canvasInfo = []
 	for (counter, im) in enumerate(images):
@@ -124,9 +124,10 @@ if __name__ == "__main__":
 	host = sys.argv[4]
 
 	fh = open(inputfile)
-
-	output = main(fh, document_id, source, host)
+	data = fh.read()
 	fh.close()
+
+	output = main(data, document_id, source, host)
 	fh = file(outputfile, 'w')
 	fh.write(output)
 	fh.close()
