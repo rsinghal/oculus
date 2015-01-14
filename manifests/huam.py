@@ -43,7 +43,7 @@ def main(data, document_id, source, host):
 	canvasInfo = []
 	for (counter, im) in enumerate(images):
 		info = {}
-		if not im["publiccaption"]:
+		if im["publiccaption"]:
 			info['label'] = im["publiccaption"]
 		else:
 			info['label'] = str(counter+1)
