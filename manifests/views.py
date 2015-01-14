@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseRedirect
+from manifests import huam
 from manifests import mets
 from manifests import mods
 from manifests import models
@@ -11,10 +12,12 @@ import urllib2
 METS_DRS_URL = "http://fds.lib.harvard.edu/fds/deliver/"
 METS_API_URL = "http://pds.lib.harvard.edu/pds/get/"
 MODS_DRS_URL = "http://webservices.lib.harvard.edu/rest/MODS/"
+HUAM_API_URL = "http://api.harvardartmuseums.org/object/"
+HUAM_API_KEY = "7a519500-933a-11e3-b8ce-c9be9b362aa7"
 
-sources = {"drs": "mets", "via": "mods", "hollis": "mods"}
+sources = {"drs": "mets", "via": "mods", "hollis": "mods", "huam" : "huam"}
 
-# view any number of MODS or METS objects
+# view any number of MODS, METS, or HUAM objects
 def view(request, view_type, document_id):
     doc_ids = document_id.split(';')
     manifests = {}
@@ -45,7 +48,7 @@ def view(request, view_type, document_id):
     else:
         return HttpResponse("The requested document ID(s) %s could not be displayed" % document_id, status=404) # 404 HttpResponse object
 
-# Returns a IIIF manifest of a METS or MODS document in DRS
+# Returns a IIIF manifest of a METS, MODS or HUAM JSON object
 # Checks if DB has it, otherwise creates it
 def manifest(request, document_id):
     parts = document_id.split(":")
@@ -79,7 +82,7 @@ def delete(request, document_id):
         return HttpResponse("Document ID %s does not exist in the database" % document_id, status=404)
 
 # Force refresh a single document
-# Pull METS or MODS, rerun conversion script, and store in db
+# Pull METS, MODS or HUAM JSON, rerun conversion script, and store in db
 def refresh(request, document_id):
     parts = document_id.split(":")
     host = request.META['HTTP_HOST']
@@ -98,7 +101,7 @@ def refresh(request, document_id):
 
 # Force refresh all records from a single source
 # WARNING: this could take a long time
-# Pull METS or MODS, rerun conversion script, and store in db
+# Pull all METS, MODS or HUAM JSON, rerun conversion script, and store in db
 def refresh_by_source(request, source):
     document_ids = models.get_all_manifest_ids_with_type(source)
     counter = 0
@@ -142,6 +145,7 @@ def get_mets(document_id, source):
     response_doc = response.read()
     return (True, response_doc)
 
+# IDS can only deep zoom on JP2 images
 def mets_jp2_check(document_id):
     api_url = METS_API_URL+document_id
     response = urllib2.urlopen(api_url)
@@ -167,6 +171,19 @@ def get_mods(document_id, source):
     mods = response.read()
     return (True, mods)
 
+# Gets HUAM JSON from HUAM API
+def get_huam(document_id, source):
+    huam_url = HUAM_API_URL+document_id+"?apikey="+HUAM_API_KEY
+    try:
+        response = urllib2.urlopen(huam_url)
+    except urllib2.HTTPError, err:
+        if err.code == 500 or err.code == 403: ## TODO
+            # document does not exist in DRS
+            return (False, HttpResponse("The document ID %s does not exist" % document_id, status=404))
+
+    huam = response.read()
+    return (True, huam)
+
 # Adds headers to Response for returning JSON that other Mirador instances can access
 def add_headers(response):
     response["Access-Control-Allow-Origin"] = "*"
@@ -181,18 +198,20 @@ def get_manifest(document_id, source, force_refresh, host):
     ## TODO: add last modified check
 
     if not has_manifest or force_refresh:
-        # If not, get MODS or METS from DRS
-        xml_type = sources[source]
-        if xml_type == "mods":
+        # If not, get MODS, METS, or HUAM JSON
+        data_type = sources[source]
+        if data_type == "mods":
             ## TODO: check image types??
             (success, response) = get_mods(document_id, source)
-        elif xml_type == "mets":
+        elif data_type == "mets":
             # check if mets object has jp2 images, only those will work in image server
             has_jp2 = mets_jp2_check(document_id)
             if not has_jp2:
                 return (has_jp2, HttpResponse("The document ID %s does not have JP2 images" % document_id, status=404), document_id, source)
             
             (success, response) = get_mets(document_id, source)
+        elif data_type == "huam":
+            (success, response) = get_huam(document_id, source)
         else:
             success = False
             response = HttpResponse("Invalid source type", status=404)
@@ -201,7 +220,7 @@ def get_manifest(document_id, source, force_refresh, host):
             return (success, response, document_id, source) # This is actually the 404 HttpResponse, so return and end the function
  
         # Convert to shared canvas model if successful
-        if xml_type == "mods":
+        if data_type == "mods":
             converted_json = mods.main(response, document_id, source, host)
             # check if this is, in fact, a PDS object masked as a hollis request
             # If so, get the manifest with the DRS METS ID and return that
@@ -209,13 +228,15 @@ def get_manifest(document_id, source, force_refresh, host):
             if 'pds' in json_doc:
                 id = json_doc['pds']
                 return get_manifest(id, 'drs', False, host)
-        elif xml_type == "mets":
+        elif data_type == "mets":
             converted_json = mets.main(response, document_id, source, host)
+        elif data_type == "huam":
+            converted_json = huam.main(response, document_id, source, host)
         else:
             pass
         # Store to elasticsearch
         models.add_or_update_manifest(document_id, converted_json, source)
-        # Return the docuemnt_id and source in case this is a hollis record
+        # Return the documet_id and source in case this is a hollis record
         # that also has METS/PDS
         return (success, converted_json, document_id, source)
     else:
