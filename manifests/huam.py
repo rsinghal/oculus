@@ -59,12 +59,14 @@ def main(data, document_id, source, host):
 		info['image'] = image_id
 		canvasInfo.append(info)
 
+	# can add metadata key/value pairs
 	mfjson = {
 		"@context":"http://www.shared-canvas.org/ns/context.json",
 		"@id": manifest_uri,
 		"@type":"sc:Manifest",
 		"label":manifestLabel,
 		"attribution":attribution,
+		"description":huam_json["provenance"],
 		"sequences": [
 			{
 				"@id": manifest_uri + "/sequence/normal.json",
