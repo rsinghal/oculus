@@ -160,14 +160,14 @@ def main(data, document_id, source, host):
 	## TODO: top to bottom and bottom to top viewing directions
 	## TODO: add Finding Aid links
 	viewingDirection = 'left-to-right' # default
-	seeAlso = ""
+	related = ""
 	if isDrs1:
 		hollisCheck = dom.xpath('/mets:mets/mets:dmdSec/mets:mdWrap/mets:xmlData/mods:mods/mods:identifier[@type="hollis"]/text()', namespaces=ALLNS)
 	else:
 		hollisCheck = dom.xpath('/mets:mets/mets:amdSec//hulDrsAdmin:hulDrsAdmin/hulDrsAdmin:drsObject/hulDrsAdmin:harvardMetadataLinks/hulDrsAdmin:metadataIdentifier[../hulDrsAdmin:metadataType/text()="Aleph"]/text()', namespaces=ALLNS)
 	if len(hollisCheck) > 0:
 		hollisID = hollisCheck[0].strip()
-		seeAlso = HOLLIS_PUBLIC_URL+hollisID
+		related = HOLLIS_PUBLIC_URL+hollisID
 		response = urllib2.urlopen(HOLLIS_API_URL+hollisID).read()
 		mods_dom = etree.XML(response)
 		hollis_langs = set(mods_dom.xpath('/mods:mods/mods:language/mods:languageTerm/text()', namespaces=ALLNS))
@@ -219,8 +219,8 @@ def main(data, document_id, source, host):
 		"structures": []
 	}
 
-	if (seeAlso != ""):
-		mfjson["seeAlso"] = seeAlso
+	if (related != ""):
+		mfjson["related"] = related
 
 	canvases = []
 	for cvs in canvasInfo:
