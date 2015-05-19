@@ -16,6 +16,7 @@ manifestUriBase = ""
 serviceBase = imageUriBase
 profileLevel = "http://library.stanford.edu/iiif/image-api/1.1/conformance.html#level1"
 attribution = "Provided by Harvard University"
+LOGO = "http://iiif.lib.harvard.edu/static/manifests/harvard_logo.jpg"
 
 def main(data, document_id, source, host):
 	global imageHash 
@@ -70,6 +71,7 @@ def main(data, document_id, source, host):
 		"@type":"sc:Manifest",
 		"label":manifestLabel,
 		"attribution":attribution,
+		"logo": LOGO,
 		"sequences": [
 			{
 				"@id": manifest_uri + "/sequence/normal.json",
