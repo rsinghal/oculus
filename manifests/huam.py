@@ -11,6 +11,7 @@ imageInfoSuffix = "/info.json"
 manifestUriBase = ""
 serviceBase = imageUriBase
 profileLevel = "http://library.stanford.edu/iiif/image-api/1.1/conformance.html#level1"
+LOGO = "http://iiif.lib.harvard.edu/static/manifests/harvard_logo.jpg"
 
 def main(data, document_id, source, host):
 	global imageHash 
@@ -66,6 +67,7 @@ def main(data, document_id, source, host):
 		"@type":"sc:Manifest",
 		"label":manifestLabel,
 		"attribution":attribution,
+		"logo":LOGO,
 		"description":huam_json["provenance"],
 		"sequences": [
 			{
