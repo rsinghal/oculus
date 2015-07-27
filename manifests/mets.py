@@ -26,7 +26,7 @@ attribution = "Provided by Harvard University"
 
 HOLLIS_API_URL = "http://webservices.lib.harvard.edu/rest/MODS/hollis/"
 HOLLIS_PUBLIC_URL = "http://hollisclassic.harvard.edu/F?func=find-c&CCL_TERM=sys="
-LOGO = "http://iiif.lib.harvard.edu/static/manifests/harvard_logo.jpg"
+LOGO = "https://images.harvardx.harvard.edu/iiif/harvard_logo.tif/full/full/0/default.jpg"
  ## Add ISO639-2B language codes here where books are printed right-to-left (not just the language is read that way)
 right_to_left_langs = set(['ara','heb'])
 
