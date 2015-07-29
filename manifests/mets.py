@@ -209,7 +209,7 @@ def main(data, document_id, source, host):
 		"@type":"sc:Manifest",
 		"label":manifestLabel,
 		"attribution":attribution,
-		#"logo": LOGO,
+		"logo": LOGO,
 		"sequences": [
 			{
 				"@id": manifest_uri + "/sequence/normal.json",

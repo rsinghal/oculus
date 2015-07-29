@@ -11,7 +11,7 @@ imageInfoSuffix = "/info.json"
 manifestUriBase = ""
 serviceBase = imageUriBase
 profileLevel = "http://library.stanford.edu/iiif/image-api/1.1/conformance.html#level1"
-LOGO = "http://iiif.lib.harvard.edu/static/manifests/harvard_logo.jpg"
+LOGO = "https://images.harvardx.harvard.edu/iiif/harvard_logo.tif/full/full/0/default.jpg"
 
 def main(data, document_id, source, host):
 	global imageHash 
