@@ -1,5 +1,5 @@
 """
-Django settings for metadata_server project.
+Django settings for oculus project.
 
 For more information on this file, see
 https://docs.djangoproject.com/en/1.6/topics/settings/
@@ -48,9 +48,9 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
 
-ROOT_URLCONF = 'metadata_server.urls'
+ROOT_URLCONF = 'oculus.urls'
 
-WSGI_APPLICATION = 'metadata_server.wsgi.application'
+WSGI_APPLICATION = 'oculus.wsgi.application'
 
 
 # Database

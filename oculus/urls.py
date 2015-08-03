@@ -5,7 +5,7 @@ admin.autodiscover()
 
 urlpatterns = patterns('',
     # Examples:
-    # url(r'^$', 'metadata_server.views.home', name='home'),
+    # url(r'^$', 'oculus.views.home', name='home'),
     # url(r'^blog/', include('blog.urls')),
     url(r'^manifests/', include('manifests.urls')),
     url(r'^admin/', include(admin.site.urls)),
