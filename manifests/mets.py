@@ -16,7 +16,7 @@ canvasInfo = []
 rangesJsonList = []
 
 ## TODO: Other image servers?
-imageUriBase = "http://ids.lib.harvard.edu/ids/iiif/"
+imageUriBase = "http://images-dev.harvardx.harvard.edu/ids/iiif/"
 imageUriSuffix = "/full/full/full/native"
 imageInfoSuffix = "/info.json"
 manifestUriBase = ""

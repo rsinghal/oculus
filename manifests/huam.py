@@ -5,7 +5,7 @@ import urllib2
 
 imageHash = {}
 
-imageUriBase = "https://images.harvardx.harvard.edu/ids/iiif/"
+imageUriBase = "http://images-dev.harvardx.harvard.edu/ids/iiif/"
 imageUriSuffix = "/full/full/full/native"
 imageInfoSuffix = "/info.json"
 manifestUriBase = ""
