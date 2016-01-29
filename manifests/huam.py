@@ -2,22 +2,23 @@
 
 import json, sys
 import urllib2
+from django.conf import settings
 
 imageHash = {}
 
-imageUriBase = "http://images-dev.harvardx.harvard.edu/ids/iiif/"
-imageUriSuffix = "/full/full/full/native"
-imageInfoSuffix = "/info.json"
+imageUriBase = settings.IIIF['imageUriBase']
+imageUriSuffix = settings.IIIF['imageUriSuffix']
+imageInfoSuffix = settings.IIIF['imageInfoSuffix']
 manifestUriBase = ""
 serviceBase = imageUriBase
-profileLevel = "http://library.stanford.edu/iiif/image-api/1.1/conformance.html#level1"
-LOGO = "http://iiif.lib.harvard.edu/static/manifests/harvard_logo.jpg"
+profileLevel = settings.IIIF['profileLevel']
+LOGO = settings.IIIF['LOGO']
 
 def main(data, document_id, source, host):
 	global imageHash 
 	imageHash = {}
 	global manifestUriBase
-	manifestUriBase = "http://%s/manifests/" % host
+	manifestUriBase = "https://%s/manifests/" % host
 
 	huam_json = json.loads(data)
 	attribution = huam_json["creditline"]

@@ -26,6 +26,14 @@ TEMPLATE_DEBUG = True
 
 ALLOWED_HOSTS = []
 
+IIIF = {
+    "imageUriBase"      : "https://images-dev.harvardx.harvard.edu/ids/iiif/",
+    "imageUriSuffix"    : "/full/full/full/native",
+    "imageInfoSuffix"   : "/info.json",
+    "profileLevel"      : "http://library.stanford.edu/iiif/image-api/1.1/conformance.html#level1",
+    "attribution"       : "Provided by Harvard University",
+    "LOGO"              : "https://images.harvardx.harvard.edu/iiif/harvard_logo.tif/full/full/0/default.jpg"
+}
 
 # Application definition
 

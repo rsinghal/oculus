@@ -3,6 +3,7 @@
 from lxml import etree
 import json, sys
 import urllib2
+from django.conf import settings
 
 metsNS = 'http://www.loc.gov/METS/'
 modsNS = 'http://www.loc.gov/mods/v3'
@@ -16,17 +17,17 @@ canvasInfo = []
 rangesJsonList = []
 
 ## TODO: Other image servers?
-imageUriBase = "http://images-dev.harvardx.harvard.edu/ids/iiif/"
-imageUriSuffix = "/full/full/full/native"
-imageInfoSuffix = "/info.json"
+imageUriBase = settings.IIIF['imageUriBase']
+imageUriSuffix = settings.IIIF['imageUriSuffix']
+imageInfoSuffix = settings.IIIF['imageInfoSuffix']
 manifestUriBase = ""
 serviceBase = imageUriBase
-profileLevel = "http://library.stanford.edu/iiif/image-api/1.1/conformance.html#level1"
-attribution = "Provided by Harvard University"
+profileLevel = settings.IIIF['profileLevel']
+attribution = settings.IIIF['attribution']
 
 HOLLIS_API_URL = "http://webservices.lib.harvard.edu/rest/MODS/hollis/"
 HOLLIS_PUBLIC_URL = "http://hollisclassic.harvard.edu/F?func=find-c&CCL_TERM=sys="
-LOGO = "http://iiif.lib.harvard.edu/static/manifests/harvard_logo.jpg"
+LOGO = settings.IIIF['LOGO']
  ## Add ISO639-2B language codes here where books are printed right-to-left (not just the language is read that way)
 right_to_left_langs = set(['ara','heb'])
 
@@ -139,7 +140,7 @@ def main(data, document_id, source, host):
 	global rangesJsonList 
 	rangesJsonList = []
 	global manifestUriBase
-	manifestUriBase = "http://%s/manifests/" % host
+	manifestUriBase = "https://%s/manifests/" % host
 
 	dom = etree.XML(data)
 	# Check if this is a DRS2 object since some things, like hollis ID are in a different location
