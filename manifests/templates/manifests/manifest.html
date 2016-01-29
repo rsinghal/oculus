@@ -19,7 +19,7 @@
 
       Mirador({
         "id": "viewer",
-        "buildPath" : "{% static 'manifests/prod/'}",
+        "buildPath" : "{% static 'manifests/prod/' %}",
         "data": [
     {% for uri, title in manifests.items %}
     { "manifestUri": "{{ uri }}", "location": "Harvard University" },
