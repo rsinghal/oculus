@@ -94,6 +94,7 @@ def main(data, document_id, source, host):
 			"label": cvs['label'],
 			"height": infojson['height'],
 			"width": infojson['width'],
+			"thumbnail": imageUriBase + cvs['image'] + thumbnailSuffix,
 			"images": [
 				{
 					"@id":manifest_uri+"/annotation/anno-%s.json" % cvs['image'],
