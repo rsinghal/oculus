@@ -19,6 +19,7 @@ rangesJsonList = []
 ## TODO: Other image servers?
 imageUriBase = settings.IIIF['imageUriBase']
 imageUriSuffix = settings.IIIF['imageUriSuffix']
+thumbnailSuffix = settings.IIIF['thumbnailSuffix']
 imageInfoSuffix = settings.IIIF['imageInfoSuffix']
 manifestUriBase = ""
 serviceBase = imageUriBase
@@ -244,6 +245,7 @@ def main(data, document_id, source, host):
 						"@id": imageUriBase + cvs['image'] + imageUriSuffix,
 						"@type": "dctypes:Image",
 						"format":"image/jpeg",
+						"thumbnail": imageUriBase + cvs['image'] + thumbnailSuffix,
 						"height": infojson['height'],
 						"width": infojson['width'],
 						"service": { 
