@@ -23,7 +23,6 @@ thumbnailSuffix = settings.IIIF['thumbnailSuffix']
 imageInfoSuffix = settings.IIIF['imageInfoSuffix']
 manifestUriBase = ""
 serviceBase = imageUriBase
-profileLevel = settings.IIIF['profileLevel']
 attribution = settings.IIIF['attribution']
 
 HOLLIS_API_URL = "http://webservices.lib.harvard.edu/rest/MODS/hollis/"
@@ -33,7 +32,7 @@ LOGO = settings.IIIF['LOGO']
 right_to_left_langs = set(['ara','heb'])
 
 def process_page(sd, rangeKey, new_ranges):
-	# first check if PAGE has label, otherwise get parents LABEL/ORDER				
+	# first check if PAGE has label, otherwise get parents LABEL/ORDER
 	if 'LABEL' in sd.attrib:
 		label = sd.get('LABEL')
 	else:
@@ -60,11 +59,11 @@ def process_struct_map(div, ranges):
 		new_ranges = []
 		process_page(div, rangeKey, new_ranges)
 		if len(new_ranges) == 1:
-			range_dict = new_ranges[0]			
+			range_dict = new_ranges[0]
 			new_ranges = range_dict.get(range_dict.keys()[0])
 		ranges.append({rangeKey : new_ranges})
 
-	subdivs = div.xpath('./mets:div', namespaces = ALLNS)	
+	subdivs = div.xpath('./mets:div', namespaces = ALLNS)
 	if len(subdivs) > 0:
 		new_ranges = []
 		for sd in subdivs:
@@ -76,11 +75,11 @@ def process_struct_map(div, ranges):
 		# this is for the books where every single page is labeled (like Book of Hours)
 		# most books do not do this
 		if len(new_ranges) == 1:
-			range_dict = new_ranges[0]			
+			range_dict = new_ranges[0]
 			new_ranges = range_dict.get(range_dict.keys()[0])
 		ranges.append({rangeKey : new_ranges})
 	return ranges
-	
+
 def get_leaf_canvases(ranges, leaf_canvases):
 	for range in ranges:
 		if type(range) is dict:
@@ -131,21 +130,21 @@ def create_ranges(ranges, previous_id, manifest_uri):
 		new_ranges = ri.get(label)
 		create_range_json(new_ranges, manifest_uri, range_id, previous_id, label)
 		create_ranges(new_ranges, range_id, manifest_uri)
-	
+
 def main(data, document_id, source, host):
 	# clear global variables
-	global imageHash 
+	global imageHash
 	imageHash = {}
-	global canvasInfo 
+	global canvasInfo
 	canvasInfo = []
-	global rangesJsonList 
+	global rangesJsonList
 	rangesJsonList = []
 	global manifestUriBase
 	manifestUriBase = "https://%s/manifests/" % host
 
 	dom = etree.XML(data)
 	# Check if this is a DRS2 object since some things, like hollis ID are in a different location
-	isDrs1 = True; 
+	isDrs1 = True;
 	drs_check = dom.xpath('/mets:mets//premis:agentName/text()', namespaces=ALLNS)
 	if len(drs_check) > 0 and 'DRS2' in '\t'.join(drs_check):
 		isDrs1 = False
@@ -238,7 +237,8 @@ def main(data, document_id, source, host):
 			"width": infojson['width'],
 			"thumbnail": {
 			 "@id": imageUriBase + cvs['image'] + thumbnailSuffix,
-			},			
+			 "@type": "dcTypes:Image"
+			},
 			"images": [
 				{
 					"@id":manifest_uri+"/annotation/anno-%s.json" % cvs['image'],
@@ -250,9 +250,10 @@ def main(data, document_id, source, host):
 						"format":"image/jpeg",
 						"height": infojson['height'],
 						"width": infojson['width'],
-						"service": { 
+						"service": {
 						  "@id": imageUriBase + cvs['image'],
-						  "profile": profileLevel
+						  "profile": infojson['profile'],
+						  "context": infojson['context']
 						},
 					},
 					"on": manifest_uri + "/canvas/canvas-%s.json" % cvs['image']

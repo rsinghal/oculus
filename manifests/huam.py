@@ -12,11 +12,10 @@ thumbnailSuffix = settings.IIIF['thumbnailSuffix']
 imageInfoSuffix = settings.IIIF['imageInfoSuffix']
 manifestUriBase = ""
 serviceBase = imageUriBase
-profileLevel = settings.IIIF['profileLevel']
 LOGO = settings.IIIF['LOGO']
 
 def main(data, document_id, source, host):
-	global imageHash 
+	global imageHash
 	imageHash = {}
 	global manifestUriBase
 	manifestUriBase = "https://%s/manifests/" % host
@@ -55,7 +54,7 @@ def main(data, document_id, source, host):
 		url_idx = ids_url.rfind('/')
 		q_idx = ids_url.rfind('?') # and before any ? in URL
 		if q_idx != -1:
-			image_id = ids_url[url_idx+1:q_idx] 
+			image_id = ids_url[url_idx+1:q_idx]
 		else:
 			image_id = ids_url[url_idx+1:]
 
@@ -93,6 +92,7 @@ def main(data, document_id, source, host):
 			"width": infojson['width'],
 			"thumbnail": {
 			 "@id": imageUriBase + cvs['image'] + thumbnailSuffix,
+			 "@type": "dcTypes:Image"
 			},
 			"images": [
 				{
@@ -105,9 +105,10 @@ def main(data, document_id, source, host):
 						"format":"image/jpeg",
 						"height": infojson['height'],
 						"width": infojson['width'],
-						"service": { 
+						"service": {
 						  "@id": imageUriBase + cvs['image'],
-						  "profile": profileLevel
+						  "profile": infojson['profile'],
+						  "context": infojson['context']
 						},
 					},
 					"on": manifest_uri + "/canvas/canvas-%s.json" % cvs['image']
