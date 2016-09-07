@@ -111,7 +111,7 @@ def main(data, document_id, source, host):
 						"service": {
 						  "@id": imageUriBase + cvs['image'],
 						  "profile": infojson['profile'],
-						  "context": infojson['context']
+						  "@context": infojson['@context']
 						},
 					},
 					"on": manifest_uri + "/canvas/canvas-%s.json" % cvs['image']
