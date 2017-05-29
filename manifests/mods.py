@@ -3,23 +3,24 @@
 from lxml import etree
 import json, sys
 import urllib2
+from django.conf import settings
 
 modsNS = 'http://www.loc.gov/mods/v3'
 
 ALLNS = {'mods':modsNS}
 imageHash = {}
 
-imageUriBase = "https://images.harvardx.harvard.edu/ids/iiif/"
-imageUriSuffix = "/full/full/full/native"
-imageInfoSuffix = "/info.json"
+imageUriBase = settings.IIIF['imageUriBase']
+imageUriSuffix = settings.IIIF['imageUriSuffix']
+thumbnailSuffix = settings.IIIF['thumbnailSuffix']
+imageInfoSuffix = settings.IIIF['imageInfoSuffix']
 manifestUriBase = ""
 serviceBase = imageUriBase
-profileLevel = "http://library.stanford.edu/iiif/image-api/1.1/conformance.html#level1"
-attribution = "Provided by Harvard University"
-LOGO = "https://images.harvardx.harvard.edu/iiif/harvard_logo.tif/full/full/0/default.jpg"
+attribution = settings.IIIF['attribution']
+LOGO = settings.IIIF['LOGO']
 
 def main(data, document_id, source, host):
-	global imageHash 
+	global imageHash
 	imageHash = {}
 	global manifestUriBase
 	manifestUriBase = "https://%s/manifests/" % host
@@ -54,7 +55,7 @@ def main(data, document_id, source, host):
 		url_idx = ids_url.rfind('/')
 		q_idx = ids_url.rfind('?') # and before any ? in URL
 		if q_idx != -1:
-			image_id = ids_url[url_idx+1:q_idx] 
+			image_id = ids_url[url_idx+1:q_idx]
 		else:
 			image_id = ids_url[url_idx+1:]
 
@@ -66,7 +67,7 @@ def main(data, document_id, source, host):
 		canvasInfo.append(info)
 
 	mfjson = {
-		"@context":"http://www.shared-canvas.org/ns/context.json",
+		"@context":"http://iiif.io/api/presentation/1/context.json",
 		"@id": manifest_uri,
 		"@type":"sc:Manifest",
 		"label":manifestLabel,
@@ -92,6 +93,10 @@ def main(data, document_id, source, host):
 			"label": cvs['label'],
 			"height": infojson['height'],
 			"width": infojson['width'],
+			"thumbnail": {
+			 "@id": imageUriBase + cvs['image'] + thumbnailSuffix,
+			 "@type": "dcTypes:Image"
+			},
 			"images": [
 				{
 					"@id":manifest_uri+"/annotation/anno-%s.json" % cvs['image'],
@@ -99,13 +104,14 @@ def main(data, document_id, source, host):
 					"motivation": "sc:painting",
 					"resource": {
 						"@id": imageUriBase + cvs['image'] + imageUriSuffix,
-						"@type": "dcterms:Image",
+						"@type": "dctypes:Image",
 						"format":"image/jpeg",
 						"height": infojson['height'],
 						"width": infojson['width'],
-						"service": { 
+						"service": {
 						  "@id": imageUriBase + cvs['image'],
-						  "profile": profileLevel
+						  "profile": infojson['profile'],
+						  "@context": infojson['@context']
 						},
 					},
 					"on": manifest_uri + "/canvas/canvas-%s.json" % cvs['image']
